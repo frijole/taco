@@ -8,6 +8,6 @@
 
 #import <UIKit/UIKit.h>
 
-@interface FJTSecondViewController : UIViewController
+@interface FJTHistoryViewController : UITableViewController
 
 @end
