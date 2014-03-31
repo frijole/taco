@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
+#import <CoreLocation/CoreLocation.h>
+
 typedef NS_ENUM( NSInteger, FJTPunchType) {
     FJTPunchTypeUnset = 0,
     FJTPunchTypePunchIn,
@@ -25,13 +27,29 @@ typedef NS_ENUM( NSInteger, FJTPunchType) {
 
 @interface FJTPunchManager : NSObject
 
-// get the icepacks
+// punches
 + (NSMutableArray *)punches;
 
 + (FJTPunch *)punchIn;
 + (FJTPunch *)punchOut;
 
-// remove a specified icepack
 + (BOOL)deletePunch:(FJTPunch *)icepack;
+
+// time-based reminders
++ (BOOL)lunchReminderEnabled;
++ (void)setLunchReminderEnabled:(BOOL)enabled;
+
++ (BOOL)shiftReminderEnabled;
++ (void)setShiftReminderEnabled:(BOOL)enabled;
+
+// location-based ones
++ (CLPlacemark *)workLocationPlacemark;
++ (void)setWorkLocationPlacemark:(CLPlacemark *)placemark;
+
++ (BOOL)punchInReminderEnabled;
++ (void)setPunchInReminderEnabled:(BOOL)enabled;
+
++ (BOOL)punchOutReminderEnabled;
++ (void)setPunchOutReminderEnabled:(BOOL)enabled;
 
 @end

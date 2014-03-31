@@ -49,7 +49,7 @@
 
 - (void)updatePunchLabel
 {
-    NSString *tmpLastPunchText = @"No punches yet.";
+    NSString *tmpLastPunchText = @"Last Punch:\nNo punches yet.";
     NSString *tmpButtonTitle = @"Punch In";
     
     FJTPunch *tmpPunch = [FJTPunchManager punches].lastObject;
@@ -85,6 +85,19 @@
     }
     
     [self updatePunchLabel];
+}
+
+@end
+
+
+@implementation FJTPunchRootViewController
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    [self.tabBarItem setImage:[UIImage imageNamed:@"switch"]];
+    [self.tabBarItem setSelectedImage:[UIImage imageNamed:@"switch-on"]];
 }
 
 @end

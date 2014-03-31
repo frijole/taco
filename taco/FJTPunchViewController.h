@@ -18,3 +18,8 @@
 - (IBAction)punchButtonPressed:(id)sender;
 
 @end
+
+
+@interface FJTPunchRootViewController : UINavigationController
+
+@end

@@ -8,7 +8,7 @@
 
 #define LOGGING_ENABLED YES
 
-#define kFRTPunchManagerFileName @"icepacks"
+#define kFRTPunchManagerFileName @"punches"
 
 #import "FJTPunchManager.h"
 
@@ -53,11 +53,14 @@ static NSMutableArray *_punches = nil;
 
 @implementation FJTPunchManager
 
+#pragma mark - Punches
+
 + (NSMutableArray *)punches
 {
     // see if we need to try and load
-    if ( !_punches )
+    if ( !_punches ) {
         [self loadData];
+    }
     
     return _punches;
 }
@@ -85,6 +88,9 @@ static NSMutableArray *_punches = nil;
     // save!
     [self saveData];
     
+    // schedule some notifications (if necessary)
+    [[self class] scheduleNotificationsForPunch:rtnPunch];
+    
     // and return it
     return rtnPunch;
 }
@@ -110,7 +116,10 @@ static NSMutableArray *_punches = nil;
 #endif
     
     // save!
-    [self saveData];
+    [[self class] saveData];
+    
+    // cancel any scheduled notifications
+    [[self class] cancelAllNotifications];
     
     // and return it
     return rtnPunch;
@@ -118,6 +127,19 @@ static NSMutableArray *_punches = nil;
 
 + (BOOL)deletePunch:(FJTPunch *)punch
 {
+    // if the punch being deleted is the last one...
+    if ( punch == [[[self class] punches] lastObject] ) {
+        // and is a punch in or a punch out...
+        if ( punch.punchType == FJTPunchTypePunchIn ) {
+            // cancel any notifications it generated
+            [[self class] cancelAllNotifications];
+        } else if ( punch.punchType == FJTPunchTypePunchOut && [[self class] punches].count > 1 ) {
+            // if there is a preceeding punch, schedule notifications if necessary
+            FJTPunch *tmpNewLastPunch = [[[self class] punches] objectAtIndex:[[[self class] punches] indexOfObject:punch]-1];
+            [[self class] scheduleNotificationsForPunch:tmpNewLastPunch];
+        }
+    }
+
     [[[self class] punches] removeObject:punch];
     
     BOOL rtnStatus = [[[self class] punches] indexOfObject:punch] == NSNotFound;
@@ -137,6 +159,74 @@ static NSMutableArray *_punches = nil;
     return rtnStatus;
 }
 
+
+#pragma mark - Reminders
+
+
+// time-based reminders
++ (BOOL)lunchReminderEnabled
+{
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"lunchReminder"];
+}
+
++ (void)setLunchReminderEnabled:(BOOL)enabled
+{
+    [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"lunchReminder"];
+}
+
+
++ (BOOL)shiftReminderEnabled
+{
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"shiftReminder"];
+}
+
++ (void)setShiftReminderEnabled:(BOOL)enabled
+{
+    [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"shiftReminder"];
+}
+
+
+// location-based ones
++ (CLPlacemark *)workLocationPlacemark
+{
+    return nil;
+}
+
++ (void)setWorkLocationPlacemark:(CLPlacemark *)placemark
+{
+    // TODO: save location (or clear if nil)
+    // TODO: update region monitoring status (enable/update/disable)
+}
+
+
++ (BOOL)punchInReminderEnabled
+{
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"punchInReminder"];
+}
+
++ (void)setPunchInReminderEnabled:(BOOL)enabled
+{
+    // TODO: check for location before enabling
+    [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"punchInReminder"];
+    // TODO: disable region monitoring if necessary
+}
+
+
++ (BOOL)punchOutReminderEnabled
+{
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"punchOutReminder"];
+}
+
++ (void)setPunchOutReminderEnabled:(BOOL)enabled
+{
+    // TODO: check for location before enabling
+    [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"punchOutReminder"];
+    // TODO: disable region monitoring if necessary
+}
+
+
+#pragma mark - Utilities
+
 + (void)loadData
 {
     // try to load from disk
@@ -153,13 +243,13 @@ static NSMutableArray *_punches = nil;
         NSLog(@"⚠️ loading punches from disk failed");
 #endif
     
-    // if we don't have _icepacks
+    // if we don't have _punches
     // or it isn't a mutable array
     // set it to an empty one
     if ( !_punches || ![_punches respondsToSelector:@selector(addObject:)] ) {
         _punches = [NSMutableArray array];
     }
-
+    
     return;
 }
 
@@ -179,6 +269,54 @@ static NSMutableArray *_punches = nil;
     }
 #endif
     
+}
+
++ (void)cancelAllNotifications
+{
+    [[UIApplication sharedApplication] cancelAllLocalNotifications];
+#ifdef LOGGING_ENABLED
+    if ( [[UIApplication sharedApplication] scheduledLocalNotifications].count == 0 ) {
+        NSLog(@"✅ all local notifications cancelled");
+    } else {
+        NSLog(@"⚠️ local notifications not cancelled: %@", [[UIApplication sharedApplication] scheduledLocalNotifications]);
+    }
+#endif
+}
+
++ (void)scheduleNotificationsForPunch:(FJTPunch *)punch
+{
+    if ( punch.punchType == FJTPunchTypePunchIn ) {
+        if ( [[NSUserDefaults standardUserDefaults] boolForKey:@"lunchReminder"] ) {
+            UILocalNotification *tmpLunchNotification = [[UILocalNotification alloc] init];
+            [tmpLunchNotification setAlertBody:@"It's been four hours since you punched in."];
+            [tmpLunchNotification setAlertAction:@"punch out"];
+            NSDate *tmpFireDate = [NSDate dateWithTimeIntervalSinceNow:(4*60*60)];
+            [tmpLunchNotification setFireDate:tmpFireDate];
+            [[UIApplication sharedApplication] scheduleLocalNotification:tmpLunchNotification];
+#ifdef LOGGING_ENABLED
+            if ( [[[UIApplication sharedApplication] scheduledLocalNotifications] indexOfObject:tmpLunchNotification] != NSNotFound ) {
+                NSLog(@"✅ scheduled lunch reminder at: %@", tmpLunchNotification.fireDate);
+            } else {
+                NSLog(@"⚠️ error scheduling lunch reminder");
+            }
+#endif
+        }
+        if ( [[NSUserDefaults standardUserDefaults] boolForKey:@"shiftReminder"] ) {
+            UILocalNotification *tmpShiftNotification = [[UILocalNotification alloc] init];
+            [tmpShiftNotification setAlertBody:@"It's been eight hours since you punched in."];
+            [tmpShiftNotification setAlertAction:@"punch out"];
+            NSDate *tmpFireDate = [NSDate dateWithTimeIntervalSinceNow:(8*60*60)];
+            [tmpShiftNotification setFireDate:tmpFireDate];
+            [[UIApplication sharedApplication] scheduleLocalNotification:tmpShiftNotification];
+#ifdef LOGGING_ENABLED
+            if ( [[[UIApplication sharedApplication] scheduledLocalNotifications] indexOfObject:tmpShiftNotification] != NSNotFound ) {
+                NSLog(@"✅ scheduled shift reminder at: %@", tmpShiftNotification.fireDate);
+            } else {
+                NSLog(@"⚠️ error scheduling shift reminder");
+            }
+#endif
+        }
+    }
 }
 
 
