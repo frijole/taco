@@ -16,7 +16,7 @@
 @property (nonatomic, strong) UILongPressGestureRecognizer *dropPinRecognizer;
 @property (nonatomic, strong) MKPointAnnotation *pinPointAnnotation;
 @property (nonatomic, strong) MKPinAnnotationView *pinAnnotationView;
-@property (nonatomic, strong) MKPlacemark *pinPlacemark; // reverse geocoded address info
+// @property (nonatomic, strong) MKPlacemark *placemark; // reverse geocoded address info
 
 @property (nonatomic, weak) UILabel *statusLabel;
 @property (nonatomic, weak) UIBarButtonItem *trashButton;
@@ -44,7 +44,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view.
 
-    [self setTitle:@"Set Location"];
+    [self setTitle:@"Work Location"];
     
     [self setupToolbar];
     
@@ -63,6 +63,16 @@
     [self updateStatusLabel];
     
     [self.navigationController setToolbarHidden:NO animated:YES];
+
+    // drop pin if we have a placemark
+    if ( self.placemark ) {
+        MKMapCamera *tmpCamera = self.mapView.camera;
+        [tmpCamera setCenterCoordinate:self.placemark.location.coordinate];
+        [tmpCamera setAltitude:1000];
+        [self.mapView setCamera:tmpCamera animated:YES];
+        
+        [self dropPinAtCoordinate:self.placemark.location.coordinate];
+    }
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -114,14 +124,13 @@
 {
     NSString *tmpStatusLabelText = @"LOL WUT";
     
-    if ( self.pinPointAnnotation ) {
-        if ( self.pinPlacemark ) {
-            // TODO: show address from placemark
-            tmpStatusLabelText = [NSString stringWithFormat:@"%@", self.pinPlacemark];
+    if ( self.placemark ) {
+        if ( self.pinPointAnnotation && self.placemark ) {
+            tmpStatusLabelText = [NSString stringWithFormat:@"%@", self.placemark]; // TODO: show address from placemark
         } else {
             tmpStatusLabelText = @"Loading...";
         }
-    }else {
+    } else {
         tmpStatusLabelText = @"No Location Set";
     }
     
@@ -137,7 +146,6 @@
     
     [self updatePinPlacemark];
     
-    // TODO: start reverse geocoder for location
     [self updateStatusLabel];
 }
 
@@ -145,7 +153,7 @@
 {
     if ( self.pinPointAnnotation ) {
         
-        [self setPinPlacemark:nil];
+        [self setPlacemark:nil];
         
         self.statusLabel.text = @"Updating...";
         
@@ -155,7 +163,10 @@
                               if ( error ) {
                                   self.statusLabel.text = @"Error";
                               } else {
-                                  [self setPinPlacemark:placemarks.firstObject];
+                                  CLPlacemark *tmpPlacemark = placemarks.firstObject;
+                                  // MKPlacemark.h: To create an MKPlacemark from a CLPlacemark, call [MKPlacemark initWithPlacemark:] passing the CLPlacemark instance that is returned by CLGeocoder.
+                                  [self setPlacemark:[[MKPlacemark alloc] initWithPlacemark:tmpPlacemark]]; 
+                                  [FJTPunchManager setWorkLocationPlacemark:tmpPlacemark];
                                   [self updateStatusLabel];
                               }
                           }];
@@ -166,16 +177,31 @@
 - (void)longPressGestureRecognizerFired:(UILongPressGestureRecognizer *)gestureRecognizer
 {
     if ( gestureRecognizer.state == UIGestureRecognizerStateBegan) {
-        // NSLog(@"UILongPressGestureRecognizer Began");
+        // remove existing pin
+        if ( self.pinPointAnnotation ) {
+            [self.mapView removeAnnotation:self.pinPointAnnotation];
+        }
+        // and drop a new one
         CGPoint touchPoint = [gestureRecognizer locationInView:self.mapView];
         CLLocationCoordinate2D touchMapCoordinate = [self.mapView convertPoint:touchPoint toCoordinateFromView:self.mapView];
-        if ( !self.pinPointAnnotation ) {
-            [self dropPinAtCoordinate:touchMapCoordinate];
-        }
+        [self dropPinAtCoordinate:touchMapCoordinate];
     }
     
     return;
 }
+
+/*
+- (void)mapView:(MKMapView *)mapView didAddAnnotationViews:(NSArray *)views
+{
+    // NSLog(@"didAddAnnotationViews: %@", views);
+    for ( MKAnnotationView *tmpAnnotationView in views ) {
+        NSLog(@"annotation view: %@", tmpAnnotationView);
+        if ( [tmpAnnotationView.annotation isKindOfClass:[MKUserLocation class]] ) {
+            [tmpAnnotationView setEnabled:NO]; // prevents responding to touches (and fucking with the gesture recognizer that drops the pin)
+        }
+    }
+}
+*/
 
 - (void)mapView:(MKMapView *)mapView annotationView:(MKAnnotationView *)view didChangeDragState:(MKAnnotationViewDragState)newState fromOldState:(MKAnnotationViewDragState)oldState
 {
@@ -204,9 +230,11 @@
 
 - (void)trashButtonPressed:(id)sender
 {
-    if ( self.pinAnnotationView ) {
+    if ( self.placemark ) {
         [self.mapView removeAnnotation:self.pinPointAnnotation];
         [self setPinPointAnnotation:nil];
+        [self setPlacemark:nil];
+        [FJTPunchManager setWorkLocationPlacemark:nil];
         [self updateStatusLabel];
     }
 }

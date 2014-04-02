@@ -10,7 +10,7 @@
 
 #import "FJTLocationViewController.h"
 
-@interface FJTSettingsViewController () <FJTLocationViewControllerDelegate>
+@interface FJTSettingsViewController () <FJTLocationViewControllerDelegate, UIActionSheetDelegate>
 
 @end
 
@@ -36,6 +36,13 @@
     // self.navigationItem.rightBarButtonItem = self.editButtonItem;
     
     [self.navigationItem setBackBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:@"Settings" style:UIBarButtonItemStylePlain target:nil action:nil]];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [self.tableView reloadData];
 }
 
 - (void)switchChanged:(UISwitch *)sender
@@ -79,8 +86,10 @@
     if ( indexPath.section == 0 ) {
         if ( indexPath.row == 0 ) {
             NSString *tmpDetailLabelText = @"Tap to set location...";
-            if ( [FJTPunchManager workLocationPlacemark] ) {
+            CLPlacemark *tmpWorkLocationPlacemark = [FJTPunchManager workLocationPlacemark];
+            if ( tmpWorkLocationPlacemark ) {
                 // TOOD: format placemark into string
+                tmpDetailLabelText = tmpWorkLocationPlacemark.description;
             }
             rtnCell.detailTextLabel.text = tmpDetailLabelText;
         } else {
@@ -117,7 +126,28 @@
         FJTLocationViewController *tmpLocationViewController = [[FJTLocationViewController alloc] initWithPlacemark:[FJTPunchManager workLocationPlacemark]];
         [tmpLocationViewController setDelegate:self];
         [self.navigationController pushViewController:tmpLocationViewController animated:YES];
+    } else if ( indexPath.section == 2 && indexPath.row == 0 ) {
+        UIActionSheet *tmpActionSheet = [[UIActionSheet alloc] initWithTitle:@"Are you sure you want\nto remove all punches? There is no going back."
+                                                                    delegate:self
+                                                           cancelButtonTitle:@"Cancel"
+                                                      destructiveButtonTitle:@"Delete All Punches"
+                                                           otherButtonTitles:nil];
+        [tmpActionSheet showFromTabBar:self.tabBarController.tabBar];
     }
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex
+{
+    if ( !buttonIndex == [actionSheet cancelButtonIndex] ) {
+        // do the needful
+        NSArray *tmpPunches = [[FJTPunchManager punches] copy];
+        for ( FJTPunch *tmpPunch in tmpPunches ) {
+            [FJTPunchManager deletePunch:tmpPunch];
+        }
+    } /* 
+    else {
+        NSLog(@"cancel button pressed");
+    } */
 }
 
 @end
@@ -129,8 +159,8 @@
 {
     [super viewDidLoad];
     
-    [self.tabBarItem setImage:[UIImage imageNamed:@"settings"]];
-    [self.tabBarItem setSelectedImage:[UIImage imageNamed:@"settings-on"]];
+    [self.tabBarItem setImage:[UIImage imageNamed:@"bell"]];
+    [self.tabBarItem setSelectedImage:[UIImage imageNamed:@"bell-on"]];
 }
 
 @end

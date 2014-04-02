@@ -8,7 +8,8 @@
 
 #define LOGGING_ENABLED YES
 
-#define kFRTPunchManagerFileName @"punches"
+#define kFRTPunchManagerPunchFileName @"punches"
+#define kFRTPunchManagerLocationFileName @"workLocation"
 
 #import "FJTPunchManager.h"
 
@@ -50,6 +51,7 @@
 @end
 
 static NSMutableArray *_punches = nil;
+static CLPlacemark *_workLocationPlacemark = nil;
 
 @implementation FJTPunchManager
 
@@ -189,12 +191,20 @@ static NSMutableArray *_punches = nil;
 // location-based ones
 + (CLPlacemark *)workLocationPlacemark
 {
-    return nil;
+    if ( !_workLocationPlacemark ) {
+        // load it
+        [self loadData];
+    }
+    
+    return _workLocationPlacemark;
 }
 
 + (void)setWorkLocationPlacemark:(CLPlacemark *)placemark
 {
-    // TODO: save location (or clear if nil)
+    _workLocationPlacemark = placemark;
+    
+    [self saveData];
+    
     // TODO: update region monitoring status (enable/update/disable)
 }
 
@@ -231,16 +241,29 @@ static NSMutableArray *_punches = nil;
 {
     // try to load from disk
     NSArray *documentDirectories = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *tmpAddressFilePath = [NSString stringWithFormat:@"%@/%@",[documentDirectories objectAtIndex:0],kFRTPunchManagerFileName];
-    NSArray *tmpIcepacksFromDisk = [NSKeyedUnarchiver unarchiveObjectWithFile:tmpAddressFilePath];
-    if ( tmpIcepacksFromDisk && tmpIcepacksFromDisk.count > 0 )
-        _punches = [NSMutableArray arrayWithArray:tmpIcepacksFromDisk];
+    
+    NSString *tmpPunchesFilePath = [NSString stringWithFormat:@"%@/%@",[documentDirectories objectAtIndex:0],kFRTPunchManagerPunchFileName];
+    NSString *tmpWorkLocationFilePath = [NSString stringWithFormat:@"%@/%@",[documentDirectories objectAtIndex:0],kFRTPunchManagerLocationFileName];
+    
+    NSArray *tmpPunchesFromDisk = [NSKeyedUnarchiver unarchiveObjectWithFile:tmpPunchesFilePath];
+    if ( tmpPunchesFromDisk && tmpPunchesFromDisk.count > 0 ) {
+        _punches = [NSMutableArray arrayWithArray:tmpPunchesFromDisk];
+    }
+    
+    _workLocationPlacemark = [NSKeyedUnarchiver unarchiveObjectWithFile:tmpWorkLocationFilePath];
     
 #ifdef LOGGING_ENABLED
-    if ( _punches )
+    if ( _punches ) {
         NSLog(@"✅ loaded punches from disk");
-    else
+    } else {
         NSLog(@"⚠️ loading punches from disk failed");
+    }
+    
+    if ( _workLocationPlacemark ) {
+        NSLog(@"✅ loaded work location from disk");
+    } else {
+        NSLog(@"⚠️ loading work location from disk failed");
+    }
 #endif
     
     // if we don't have _punches
@@ -257,15 +280,32 @@ static NSMutableArray *_punches = nil;
 {
     NSArray *documentsDirectories = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     
-    NSString *tmpAddressFilePath = [NSString stringWithFormat:@"%@/%@",[documentsDirectories objectAtIndex:0],kFRTPunchManagerFileName];
+    NSString *tmpPunchesFilePath = [NSString stringWithFormat:@"%@/%@",[documentsDirectories objectAtIndex:0],kFRTPunchManagerPunchFileName];
+    NSString *tmpWorkLocationFilePath = [NSString stringWithFormat:@"%@/%@",[documentsDirectories objectAtIndex:0],kFRTPunchManagerLocationFileName];
     
-    BOOL saveStatus = [NSKeyedArchiver archiveRootObject:[[self class] punches] toFile:tmpAddressFilePath];
+    BOOL tmpPunchSaveStatus = [NSKeyedArchiver archiveRootObject:[[self class] punches] toFile:tmpPunchesFilePath];
+    BOOL tmpLocationSaveStatus = NO;
+    if ( _workLocationPlacemark ) {
+        tmpLocationSaveStatus = [NSKeyedArchiver archiveRootObject:[[self class] workLocationPlacemark] toFile:tmpWorkLocationFilePath];
+    } else {
+        NSError *tmpError = nil;
+        tmpLocationSaveStatus = [[NSFileManager defaultManager] removeItemAtPath:tmpWorkLocationFilePath error:&tmpError];
+        if ( tmpError ) {
+            NSLog(@"eror deleting work location: %@", tmpError);
+        }
+    }
     
 #ifdef LOGGING_ENABLED
-    if ( saveStatus ) {
+    if ( tmpPunchSaveStatus ) {
         NSLog(@"✅ saved punches to disk");
     } else {
         NSLog(@"⚠️ error saving punches to disk");
+    }
+
+    if ( tmpLocationSaveStatus ) {
+        NSLog(@"✅ saved work location to disk");
+    } else {
+        NSLog(@"⚠️ error saving work location to disk");
     }
 #endif
     
