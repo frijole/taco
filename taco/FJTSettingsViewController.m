@@ -47,22 +47,14 @@
 
 - (void)switchChanged:(UISwitch *)sender
 {
-    NSString *tmpPreferenceKey = nil;
-    BOOL tmpPreferenceValue = sender.isOn;
-    
     if ( sender == self.punchInReminderSwitch ) {
-        tmpPreferenceKey = @"punchInReminder";
+        [FJTPunchManager setPunchInReminderEnabled:sender.isOn];
     } else if ( sender == self.punchOutReminderSwitch ) {
-        tmpPreferenceKey = @"punchOutReminder";
+        [FJTPunchManager setPunchOutReminderEnabled:sender.isOn];
     } else if ( sender == self.lunchReminderSwitch ) {
-        tmpPreferenceKey = @"lunchReminder";
+        [FJTPunchManager setLunchReminderEnabled:sender.isOn];
     } else if ( sender == self.shiftReminderSwitch ) {
-        tmpPreferenceKey = @"shiftReminder";
-    }
-
-    if ( tmpPreferenceKey && tmpPreferenceKey.length > 0 ) {
-        [[NSUserDefaults standardUserDefaults] setBool:tmpPreferenceValue
-                                                forKey:tmpPreferenceKey];
+        [FJTPunchManager setShiftReminderEnabled:sender.isOn];
     }
 }
 

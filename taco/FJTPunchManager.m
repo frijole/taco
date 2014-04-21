@@ -13,6 +13,11 @@
 
 #import "FJTPunchManager.h"
 
+static NSMutableArray *_punches = nil;
+static CLPlacemark *_workLocationPlacemark = nil;
+static CLLocationManager *_locationManager = nil;
+static FJTPunchManager *_locationManagerDelegate = nil; // :{
+
 @interface FJTPunch ()
 
 @property (nonatomic, strong)   NSString    *title;
@@ -29,6 +34,7 @@
         // custom init
         self.punchDate = [decoder decodeObjectForKey:@"punchDate"];
         self.punchType = [decoder decodeIntegerForKey:@"punchType"];
+        self.archived = [decoder decodeBoolForKey:@"archived"];
     }
     
     return self;
@@ -38,20 +44,18 @@
 {
     [encoder encodeObject:self.punchDate forKey:@"punchDate"];
     [encoder encodeInteger:self.punchType forKey:@"punchType"];
+    [encoder encodeBool:self.archived forKey:@"archived"];
 }
 
 @end
 
 
-@interface FJTPunchManager ()
+@interface FJTPunchManager () <CLLocationManagerDelegate>
 
-+ (void)loadData;
-+ (void)saveData;
++ (CLLocationManager *)locationManager;
++ (FJTPunchManager *)locationManagerDelegate;
 
 @end
-
-static NSMutableArray *_punches = nil;
-static CLPlacemark *_workLocationPlacemark = nil;
 
 @implementation FJTPunchManager
 
@@ -206,6 +210,7 @@ static CLPlacemark *_workLocationPlacemark = nil;
     [self saveData];
     
     // TODO: update region monitoring status (enable/update/disable)
+    [self updateRegionMonitoringForPlacemark];
 }
 
 
@@ -216,9 +221,8 @@ static CLPlacemark *_workLocationPlacemark = nil;
 
 + (void)setPunchInReminderEnabled:(BOOL)enabled
 {
-    // TODO: check for location before enabling
     [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"punchInReminder"];
-    // TODO: disable region monitoring if necessary
+    [self updateRegionMonitoringForPlacemark];
 }
 
 
@@ -229,13 +233,133 @@ static CLPlacemark *_workLocationPlacemark = nil;
 
 + (void)setPunchOutReminderEnabled:(BOOL)enabled
 {
-    // TODO: check for location before enabling
     [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"punchOutReminder"];
-    // TODO: disable region monitoring if necessary
+    [self updateRegionMonitoringForPlacemark];
 }
 
 
 #pragma mark - Utilities
+
++ (CLLocationManager *)locationManager
+{
+    if ( !_locationManager ) {
+        _locationManager = [[CLLocationManager alloc] init];
+        _locationManager.delegate = [self locationManagerDelegate];
+    }
+    
+    return _locationManager;
+}
+
++ (FJTPunchManager *)locationManagerDelegate
+{
+    if ( !_locationManagerDelegate ) {
+        _locationManagerDelegate = [[FJTPunchManager alloc] init];
+    }
+    
+    return _locationManagerDelegate;
+}
+
+- (void)locationManager:(CLLocationManager *)manager didEnterRegion:(CLRegion *)region
+{
+    NSLog(@"didExitRegion: %@", region);
+    
+    if ( [[self class] punchInReminderEnabled] ) {
+        switch ( [[UIApplication sharedApplication] applicationState] ) {
+            case UIApplicationStateActive:
+                // show an alert
+            {
+                UIAlertView *tmpAlert = [[UIAlertView alloc] initWithTitle:@"taco" message:@"You arrived at work" delegate:nil cancelButtonTitle:@"Punch In" otherButtonTitles:nil];
+                [tmpAlert show];
+            }
+                break;
+            case UIApplicationStateBackground:
+            case UIApplicationStateInactive:
+                // local notificaiton
+            {
+                UILocalNotification *tmpLocalNotification = [[UILocalNotification alloc] init];
+                tmpLocalNotification.alertBody = @"You arrived at work";
+                tmpLocalNotification.alertAction = @"Punch In";
+                tmpLocalNotification.soundName = UILocalNotificationDefaultSoundName;
+                [[UIApplication sharedApplication] presentLocalNotificationNow:tmpLocalNotification];
+            }
+                break;
+        } // switch
+    } // punchInReminderEnabled
+}
+
+- (void)locationManager:(CLLocationManager *)manager didExitRegion:(CLRegion *)region
+{
+    NSLog(@"didExitRegion: %@", region);
+
+    if ( [[self class] punchOutReminderEnabled] ) {
+        switch ( [[UIApplication sharedApplication] applicationState] ) {
+            case UIApplicationStateActive:
+                // show an alert
+            {
+                UIAlertView *tmpAlert = [[UIAlertView alloc] initWithTitle:@"taco" message:@"You left work" delegate:nil cancelButtonTitle:@"Punch Out" otherButtonTitles:nil];
+                [tmpAlert show];
+            }
+                break;
+            case UIApplicationStateBackground:
+            case UIApplicationStateInactive:
+                // local notificaiton
+            {
+                UILocalNotification *tmpLocalNotification = [[UILocalNotification alloc] init];
+                tmpLocalNotification.alertBody = @"You left work";
+                tmpLocalNotification.alertAction = @"Punch Out";
+                tmpLocalNotification.soundName = UILocalNotificationDefaultSoundName;
+                [[UIApplication sharedApplication] presentLocalNotificationNow:tmpLocalNotification];
+            }
+                break;
+        } // switch
+    } // punchOutReminderEnabled
+}
+
++ (void)updateRegionMonitoringForPlacemark
+{
+    // if we have a work location, and reminders that need it...
+    if ( _workLocationPlacemark && ( [[self class] punchInReminderEnabled] || [[self class] punchOutReminderEnabled] ) ) {
+        // can we get region-based location updates?
+        if ( [CLLocationManager isMonitoringAvailableForClass:[CLCircularRegion class]] ) {
+            // but is background refresh available to get them?
+            if ( [[UIApplication sharedApplication] backgroundRefreshStatus] == UIBackgroundRefreshStatusAvailable ) {
+                // we can monitor for regions and will fire in the background
+
+                // clear out any existing monitoring
+                NSSet *tmpRegions = [[self locationManager] monitoredRegions];
+                for ( CLRegion *tmpRegion in tmpRegions ) {
+                    [[self locationManager] stopMonitoringForRegion:tmpRegion];
+                }
+
+                // and set up a region for the _workLocationPlacemark
+                CLCircularRegion *tmpRegion = [[CLCircularRegion alloc] initWithCenter:_workLocationPlacemark.location.coordinate radius:50.0 identifier:@"workLocation"];
+                [[self locationManager] startMonitoringForRegion:tmpRegion];
+                // NSLog(@"Started monitoring for region: %@", tmpRegion);
+                
+            } /* else {
+                NSLog(@"Background Refresh is not currently available.");
+            } */
+            
+        } /* else {
+            NSLog(@"Location Monitoring is not available for CLCirculatRegions");
+        } */
+    } else {
+        // no placemark, or no reminders. make sure we're not monitoring
+        NSSet *tmpRegions = [[self locationManager] monitoredRegions];
+        for ( CLRegion *tmpRegion in tmpRegions ) {
+            [[self locationManager] stopMonitoringForRegion:tmpRegion];
+        }
+        if ( [[self locationManager] monitoredRegions].count == 0 ) {
+            // get rid of the location manager and its delegate (what if its still running?)
+            _locationManager = nil;
+            _locationManagerDelegate = nil;
+
+            // NSLog(@"Stopped monitoring regions.");
+        } /* else {
+            NSLog(@"Attempted to stop monitoring regions, still monitoring: %@", [[self locationManager] monitoredRegions]);
+        } */
+    }
+}
 
 + (void)loadData
 {

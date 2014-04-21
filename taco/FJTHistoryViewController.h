@@ -10,9 +10,14 @@
 
 @interface FJTHistoryViewController : UITableViewController
 
+@property (nonatomic, weak) IBOutlet UISegmentedControl *segmentedControl;
+
 @property (nonatomic, weak) IBOutlet UIBarButtonItem *deleteBarButtonItem;
+@property (nonatomic, weak) IBOutlet UIBarButtonItem *archiveBarButtonItem;
 @property (nonatomic, weak) IBOutlet UIBarButtonItem *statusBarButtonItem;
 @property (nonatomic, weak) IBOutlet UIBarButtonItem *shareBarButtonItem;
+
+- (IBAction)segmentedControlChanged:(id)sender;
 
 - (IBAction)deleteButtonPressed:(id)sender;
 - (IBAction)shareButtonPressed:(id)sender;

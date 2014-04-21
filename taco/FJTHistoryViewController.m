@@ -59,7 +59,8 @@
 @interface FJTHistoryViewController ()
 
 @property (nonatomic, strong) UILabel *curtainView;
-@property (nonatomic, strong) NSArray *history;
+@property (nonatomic, strong) NSArray *recentPunches;
+@property (nonatomic, strong) NSArray *archivedPunches;
 
 @end
 
@@ -82,13 +83,14 @@
 {
     [super viewWillAppear:animated];
     
+    [self loadPunches];
     [self.tableView reloadData];
     [self updateStatus];
 }
 
 - (void)didReceiveMemoryWarning
 {
-    _history = nil;
+    _recentPunches = nil;
 }
 
 - (void)editButtonPressed:(id)sender
@@ -100,8 +102,13 @@
     
     [self.navigationController setToolbarHidden:!self.editing animated:YES];
     
+    [self refreshPrompt];
+}
+
+- (void)refreshPrompt
+{
     if ( self.isEditing ) {
-        [self.navigationItem setPrompt:@"Select items to share, delete, or archive."];
+        [self.navigationItem setPrompt:[NSString stringWithFormat:@"Select items to share, delete, or %@.",self.segmentedControl.selectedSegmentIndex==0?@"archive":@"unarchive"]];
     } else {
         [self.navigationItem setPrompt:nil];
     }
@@ -113,7 +120,7 @@
     
     NSMutableArray *tmpPunchesToDelete = [NSMutableArray array];
     for ( NSIndexPath *tmpSelectedIndexPath in tmpIndexPathsForSelectedRows ) {
-       [tmpPunchesToDelete addObject:[self.history objectAtIndex:tmpSelectedIndexPath.row]];
+       [tmpPunchesToDelete addObject:[self.recentPunches objectAtIndex:tmpSelectedIndexPath.row]];
     }
 
     NSMutableArray *tmpIndexPathsForDeletedRows = [NSMutableArray array];
@@ -126,7 +133,7 @@
     [self.tableView deleteRowsAtIndexPaths:tmpIndexPathsForDeletedRows withRowAnimation:UITableViewRowAnimationLeft];
 
     // if there aren't any punches left, use the edit button to end editing
-    if ( self.history.count == 0 ) {
+    if ( self.recentPunches.count == 0 ) {
         [self editButtonPressed:nil];
     }
     
@@ -140,14 +147,70 @@
         [self editButtonPressed:nil]; // activate via button action to present toolbar
     } else {
         // editing
-        // TODO: export selection
-        [self editButtonPressed:nil]; // deactivate via button action to clean up toolbar
+        
+        if ( self.tableView.indexPathsForSelectedRows.count > 0 ) {
+            // we have some things to (un)archive
+            NSMutableArray *tmpPunchesToShare = [NSMutableArray array];
+            for ( NSIndexPath *tmpSelectedIndexPath in self.tableView.indexPathsForSelectedRows ) {
+                [tmpPunchesToShare addObject:[[self currentPunches] objectAtIndex:tmpSelectedIndexPath.row]];
+            }
+            NSString *tmpShareString = @"Exported Punches:\n";
+            for ( FJTPunch *tmpPunch in tmpPunchesToShare ) {
+                NSString *tmpPunchTypeString = @"Unknown";
+                if ( tmpPunch.punchType == FJTPunchTypePunchIn ) {
+                    tmpPunchTypeString = @"In";
+                } else if ( tmpPunch.punchType == FJTPunchTypePunchOut ) {
+                    tmpPunchTypeString = @"Out";
+                }
+                tmpShareString = [tmpShareString stringByAppendingFormat:@"%@ at %@ on %@\n",
+                                  tmpPunchTypeString,
+                                  [[FJTFormatter timeFormatter] stringFromDate:tmpPunch.punchDate],
+                                  [[FJTFormatter dateFormatter] stringFromDate:tmpPunch.punchDate]
+                                  ];
+            }
+            UIActivityViewController *tmpActivityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[tmpShareString] applicationActivities:nil];
+            [self presentViewController:tmpActivityViewController animated:YES completion:nil];
+
+        } else {
+            [MMAlertView showAlertViewWithTitle:@"No Selection"
+                                        message:@"You haven't selected\nanything to share"];
+        }
     }
 }
 
 - (IBAction)archiveButtonPressed:(id)sender
 {
-    
+    if ( self.tableView.indexPathsForSelectedRows.count > 0 ) {
+        // we have some things to (un)archive
+        NSMutableArray *tmpPunchesToArchive = [NSMutableArray array];
+        for ( NSIndexPath *tmpSelectedIndexPath in self.tableView.indexPathsForSelectedRows ) {
+            [tmpPunchesToArchive addObject:[[self currentPunches] objectAtIndex:tmpSelectedIndexPath.row]];
+        }
+        BOOL tmpShouldArchive = YES;
+        if ( self.segmentedControl.selectedSegmentIndex == 1 ) {
+            tmpShouldArchive = NO;
+        }
+        for ( FJTPunch *tmpPunch in tmpPunchesToArchive ) {
+            [tmpPunch setArchived:tmpShouldArchive];
+        }
+        [FJTPunchManager saveData];
+        [self loadPunches];
+        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationAutomatic];
+    } else {
+        NSString *tmpArchiveString = self.segmentedControl.selectedSegmentIndex==0?@"archive":@"unarchive";
+        NSString *tmpArchiveMessage = [NSString stringWithFormat:@"You haven't selected\nanything to %@", tmpArchiveString];
+        [MMAlertView showAlertViewWithTitle:@"No Selection"
+                                    message:tmpArchiveMessage];
+    }
+}
+
+- (IBAction)segmentedControlChanged:(id)sender
+{
+    [self refreshPrompt];
+    [self updateStatus];
+
+    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0]
+                  withRowAnimation:UITableViewRowAnimationFade];
 }
 
 - (void)updateStatus
@@ -157,23 +220,59 @@
     if ( self.tableView.indexPathsForSelectedRows.count > 0 ) {
         tmpString = [NSString stringWithFormat:@"%@ selected", @(self.tableView.indexPathsForSelectedRows.count)];
     } else {
-        tmpString = [NSString stringWithFormat:@"%@ punches", @([self history].count)];
+        tmpString = [NSString stringWithFormat:@"%@ punches", @([self currentPunches].count)];
     }
     
     [self.statusBarButtonItem setTitle:tmpString];
     
-    [self.navigationItem.leftBarButtonItem setEnabled:(self.history.count>0)];
-    [self.navigationItem.rightBarButtonItem setEnabled:(self.history.count>0)];
+//    BOOL tmpEnableButtons = [self currentPunches].count>0;
+//    [self.shareBarButtonItem setEnabled:tmpEnableButtons];
+//    [self.deleteBarButtonItem setEnabled:tmpEnableButtons];
+//    [self.archiveBarButtonItem setEnabled:tmpEnableButtons];
 }
 
-- (NSArray *)history
+- (NSArray *)recentPunches
 {
-    if ( !_history ) {
+    if ( !_recentPunches ) {
         // load
-        _history = [FJTPunchManager punches];
+        [self loadPunches];
     }
     
-    return _history;
+    return _recentPunches;
+}
+
+- (NSArray *)archivedPunches
+{
+    if ( !_archivedPunches ) {
+        // load
+        [self loadPunches];
+    }
+    
+    return _archivedPunches;
+}
+
+- (NSArray *)currentPunches
+{
+    NSArray *rtnArray = nil;
+    
+    if ( self.segmentedControl.selectedSegmentIndex == 0 ) {
+        rtnArray = [self recentPunches];
+    } else {
+        rtnArray = [self archivedPunches];
+    }
+    
+    return rtnArray;
+}
+
+- (void)loadPunches
+{
+    NSArray *tmpPunches = [FJTPunchManager punches];;
+    
+    NSPredicate *tmpRecentPunchesPredicate = [NSPredicate predicateWithFormat:@"archived == NO"];
+    NSPredicate *tmpArchivedPunchesPredicate = [NSPredicate predicateWithFormat:@"archived == YES"];
+    
+    _recentPunches = [tmpPunches filteredArrayUsingPredicate:tmpRecentPunchesPredicate];
+    _archivedPunches = [tmpPunches filteredArrayUsingPredicate:tmpArchivedPunchesPredicate];
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -183,14 +282,14 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return self.history.count;
+    return [self currentPunches].count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     NSString *tmpCellIdentifier = nil;
     
-    if ( self.history.count == 0 ) {
+    if ( [self currentPunches].count == 0 ) {
         tmpCellIdentifier = kFJTEmptyCellIdentifier;
     } else {
         tmpCellIdentifier = kFJTHistoryCellIdentifier;
@@ -198,9 +297,9 @@
     
     UITableViewCell *rtnCell = [tableView dequeueReusableCellWithIdentifier:tmpCellIdentifier forIndexPath:indexPath];
     
-    if ( self.history.count > 0 ) {
+    if ( self.recentPunches.count > 0 ) {
         // set up cell to display punch
-        FJTPunch *tmpPunch = [self.history objectAtIndex:indexPath.row];
+        FJTPunch *tmpPunch = [[self currentPunches] objectAtIndex:indexPath.row];
         
         NSString *tmpPunchTypeString = nil;
         switch ( tmpPunch.punchType ) {
@@ -244,7 +343,7 @@
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if ( editingStyle == UITableViewCellEditingStyleDelete ) {
-        FJTPunch *tmpPunch = [self.history objectAtIndex:indexPath.row];
+        FJTPunch *tmpPunch = [[self currentPunches] objectAtIndex:indexPath.row];
         if ( [FJTPunchManager deletePunch:tmpPunch] ) {
             [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
             [self updateStatus];

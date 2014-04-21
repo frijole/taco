@@ -16,4 +16,6 @@
 
     #import "FJTPunchManager.h"
     #import "FJTFormatter.h"
+
+    #import "MMAlertView.h"
 #endif

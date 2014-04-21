@@ -22,6 +22,8 @@ typedef NS_ENUM( NSInteger, FJTPunchType) {
 @property (nonatomic, readonly)     NSDate          *punchDate;
 @property (nonatomic)               FJTPunchType    punchType;
 
+@property (nonatomic)               BOOL            archived;
+
 @end
 
 
@@ -34,6 +36,8 @@ typedef NS_ENUM( NSInteger, FJTPunchType) {
 + (FJTPunch *)punchOut;
 
 + (BOOL)deletePunch:(FJTPunch *)icepack;
+
++ (void)saveData;
 
 // time-based reminders
 + (BOOL)lunchReminderEnabled;

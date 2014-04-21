@@ -28,6 +28,7 @@
 		3CC403DC18E874BF00190C70 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3CC403DB18E874BF00190C70 /* CoreLocation.framework */; };
 		3CC403DF18E88C2D00190C70 /* FJTLocationViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CC403DE18E88C2D00190C70 /* FJTLocationViewController.m */; };
 		3CC403E118E8965000190C70 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3CC403E018E8965000190C70 /* MapKit.framework */; };
+		3CEC83B41904AEF900CF00A2 /* MMAlertView.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CEC83B31904AEF900CF00A2 /* MMAlertView.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +73,8 @@
 		3CC403DD18E88C2D00190C70 /* FJTLocationViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJTLocationViewController.h; sourceTree = "<group>"; };
 		3CC403DE18E88C2D00190C70 /* FJTLocationViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJTLocationViewController.m; sourceTree = "<group>"; };
 		3CC403E018E8965000190C70 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		3CEC83B21904AEF900CF00A2 /* MMAlertView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMAlertView.h; sourceTree = "<group>"; };
+		3CEC83B31904AEF900CF00A2 /* MMAlertView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMAlertView.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				3C6C094818E4FDC800D35C80 /* taco */,
+				3CEC83B01904AEDE00CF00A2 /* Libraries */,
 				3C6C096A18E4FDC800D35C80 /* tacoTests */,
 				3C6C094118E4FDC800D35C80 /* Frameworks */,
 				3C6C094018E4FDC800D35C80 /* Products */,
@@ -185,6 +189,24 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		3CEC83B01904AEDE00CF00A2 /* Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				3CEC83B11904AEF900CF00A2 /* MMAlertView */,
+			);
+			name = Libraries;
+			path = taco;
+			sourceTree = "<group>";
+		};
+		3CEC83B11904AEF900CF00A2 /* MMAlertView */ = {
+			isa = PBXGroup;
+			children = (
+				3CEC83B21904AEF900CF00A2 /* MMAlertView.h */,
+				3CEC83B31904AEF900CF00A2 /* MMAlertView.m */,
+			);
+			path = MMAlertView;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -235,6 +257,11 @@
 				TargetAttributes = {
 					3C6C093E18E4FDC800D35C80 = {
 						DevelopmentTeam = W27P2Y376L;
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+						};
 					};
 					3C6C096218E4FDC800D35C80 = {
 						TestTargetID = 3C6C093E18E4FDC800D35C80;
@@ -293,6 +320,7 @@
 				3C6C095318E4FDC800D35C80 /* FJTAppDelegate.m in Sources */,
 				3C6C097C18E504A400D35C80 /* FJTFormatter.m in Sources */,
 				3C6C095C18E4FDC800D35C80 /* FJTHistoryViewController.m in Sources */,
+				3CEC83B41904AEF900CF00A2 /* MMAlertView.m in Sources */,
 				3C6C097F18E50C9700D35C80 /* FJTPunchManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
