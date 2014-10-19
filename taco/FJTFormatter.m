@@ -8,7 +8,8 @@
 
 #import "FJTFormatter.h"
 
-static FJTTimeFormatter *_timeFormatter;
+static FJTLongTimeFormatter *_longTimeFormatter;
+static FJTShortTimeFormatter *_shortTimeFormatter;
 static FJTDateFormatter *_dateFormatter;
 
 static NSTimer *_releaseTimer = nil;
@@ -16,19 +17,29 @@ static NSTimer *_releaseTimer = nil;
 
 @implementation FJTFormatter
 
-+ (FJTTimeFormatter *)timeFormatter
++ (FJTLongTimeFormatter *)longTimeFormatter
 {
-    if ( !_timeFormatter ) {
-        _timeFormatter = [[FJTTimeFormatter alloc] init];
+    if ( !_longTimeFormatter ) {
+        _longTimeFormatter = [[FJTLongTimeFormatter alloc] init];
         [[self class] resetReleaseTimer];
     }
-    return _timeFormatter;
+    return _longTimeFormatter;
+}
+
++ (FJTShortTimeFormatter *)shortTimeFormatter
+{
+    if ( !_shortTimeFormatter ) {
+        _shortTimeFormatter = [[FJTShortTimeFormatter alloc] init];
+        [[self class] resetReleaseTimer];
+    }
+    return _shortTimeFormatter;
 }
 
 + (FJTDateFormatter *)dateFormatter
 {
     if ( !_dateFormatter ) {
         _dateFormatter = [[FJTDateFormatter alloc] init];
+        [_dateFormatter setDoesRelativeDateFormatting:YES];
         [[self class] resetReleaseTimer];
     }
     return _dateFormatter;
@@ -51,19 +62,34 @@ static NSTimer *_releaseTimer = nil;
 {
     // NSLog(@"releaseCachedFormatters called");
     
-    _timeFormatter = nil;
+    _longTimeFormatter = nil;
+    _shortTimeFormatter = nil;
     _dateFormatter = nil;
 }
 
 @end
 
 
-@implementation FJTTimeFormatter
+@implementation FJTLongTimeFormatter
 
 - (instancetype)init
 {
     if ( self = [super init] ) {
         [self setTimeStyle:NSDateFormatterMediumStyle]; // “3:30:59 PM”
+        [self setDateStyle:NSDateFormatterNoStyle];
+    }
+    return self;
+}
+
+@end
+
+
+@implementation FJTShortTimeFormatter
+
+- (instancetype)init
+{
+    if ( self = [super init] ) {
+        [self setTimeStyle:NSDateFormatterShortStyle]; // “3:30 PM”
         [self setDateStyle:NSDateFormatterNoStyle];
     }
     return self;

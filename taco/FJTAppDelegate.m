@@ -14,36 +14,50 @@
 {
     // Override point for customization after application launch.
     
-    // Check for location notifications?
+    // see if we were launched with a notification
+    UILocalNotification *tmpNotification = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+    if ( tmpNotification ) {
+        NSLog(@"launched with notification: %@",tmpNotification);
+        
+        NSString *tmpAlertBody = tmpNotification.alertBody;
+        NSString *tmpAlertAction = tmpNotification.alertAction;
+        
+        [MMAlertView showAlertViewWithTitle:nil
+                                    message:tmpAlertBody
+                          cancelButtonTitle:@"Close"
+                          acceptButtonTitle:tmpAlertAction
+                                cancelBlock:nil
+                                acceptBlock:^{
+                                    // do something
+                                    if ( [tmpAlertAction isEqualToString:kFJTPunchManagerNotificationPunchOutAction] ) {
+                                        [FJTPunchManager punchOut];
+                                    } else if ( [tmpAlertAction isEqualToString:kFJTPunchManagerNotificationPunchInAction] ) {
+                                        [FJTPunchManager punchIn];
+                                    }
+                                }];
+    }
     
+    // [self configureAppearance];
+    
+    // Check for location notifications?
+    [FJTPunchManager updateRegionMonitoring];
+        
     return YES;
 }
-							
-- (void)applicationWillResignActive:(UIApplication *)application
+
+- (void)configureAppearance
 {
-    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-    // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
+    [self.window setTintColor:[UIColor orangeColor]];
 }
 
-- (void)applicationDidEnterBackground:(UIApplication *)application
+- (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings
 {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+    NSLog(@"notification settings updated: %@", notificationSettings);
 }
 
-- (void)applicationWillEnterForeground:(UIApplication *)application
+- (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification
 {
-    // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-}
-
-- (void)applicationDidBecomeActive:(UIApplication *)application
-{
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-}
-
-- (void)applicationWillTerminate:(UIApplication *)application
-{
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+    NSLog(@"received local notication: %@", notification);
 }
 
 @end

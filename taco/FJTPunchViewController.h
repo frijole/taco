@@ -15,7 +15,12 @@
 
 @property (nonatomic, weak) IBOutlet UIButton *punchButton;
 
-- (IBAction)punchButtonPressed:(id)sender;
+@property (nonatomic, weak) IBOutlet UITapGestureRecognizer *tapGestureRecognizer;
+@property (nonatomic, weak) IBOutlet UILongPressGestureRecognizer *longPressGestureRecognizer;
+
+// - (IBAction)punchButtonPressed:(id)sender;
+- (IBAction)tapGestureRecognizerAction:(id)sender;
+- (IBAction)longPressGestureRecognizerAction:(id)sender;
 
 @end
 

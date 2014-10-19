@@ -8,18 +8,23 @@
 
 #import <Foundation/Foundation.h>
 
-@class FJTTimeFormatter; // 6:35 PM
+@class FJTLongTimeFormatter; // 6:35:14 PM
+@class FJTShortTimeFormatter; // 6:35
 @class FJTDateFormatter; // March 5
 
 @interface FJTFormatter : NSObject
 
-+ (FJTTimeFormatter *)timeFormatter;
++ (FJTLongTimeFormatter *)longTimeFormatter;
++ (FJTShortTimeFormatter *)shortTimeFormatter;
 + (FJTDateFormatter *)dateFormatter;
 
 @end
 
 
-@interface FJTTimeFormatter : NSDateFormatter
+@interface FJTLongTimeFormatter : NSDateFormatter
+@end
+
+@interface FJTShortTimeFormatter : NSDateFormatter
 @end
 
 @interface FJTDateFormatter : NSDateFormatter

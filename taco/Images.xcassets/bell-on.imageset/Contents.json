@@ -2,12 +2,18 @@
   "images" : [
     {
       "idiom" : "universal",
-      "scale" : "1x"
+      "scale" : "1x",
+      "filename" : "756-bell-selected.png"
     },
     {
       "idiom" : "universal",
       "scale" : "2x",
-      "filename" : "bell-on@2x.png"
+      "filename" : "756-bell-selected@2x.png"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "3x",
+      "filename" : "756-bell-selected@3x.png"
     }
   ],
   "info" : {

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>${PRODUCT_NAME}</string>
+	<string>Taco</string>
 	<key>CFBundleExecutable</key>
 	<string>${EXECUTABLE_NAME}</string>
 	<key>CFBundleIdentifier</key>
@@ -24,6 +24,10 @@
 	<string>1.0</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Taco can use your location to remind you to punch in and out. Your location is never shared or transmitted.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Taco can use your location to remind you to punch in and out. Your location is never shared or transmitted.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

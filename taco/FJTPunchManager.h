@@ -16,11 +16,15 @@ typedef NS_ENUM( NSInteger, FJTPunchType) {
     FJTPunchTypePunchOut,
 };
 
+extern NSString * const kFJTPunchManagerNotificationPunchInAction;
+extern NSString * const kFJTPunchManagerNotificationPunchOutAction;
 
 @interface FJTPunch : NSObject <NSCoding>
 
 @property (nonatomic, readonly)     NSDate          *punchDate;
 @property (nonatomic)               FJTPunchType    punchType;
+
+@property (nonatomic, strong)       NSString        *punchNotes;
 
 @property (nonatomic)               BOOL            archived;
 
@@ -55,5 +59,7 @@ typedef NS_ENUM( NSInteger, FJTPunchType) {
 
 + (BOOL)punchOutReminderEnabled;
 + (void)setPunchOutReminderEnabled:(BOOL)enabled;
+
++ (void)updateRegionMonitoring;
 
 @end

@@ -12,11 +12,13 @@
 #define kFRTPunchManagerLocationFileName @"workLocation"
 
 #import "FJTPunchManager.h"
+#import "FJTLocationManager.h"
 
 static NSMutableArray *_punches = nil;
 static CLPlacemark *_workLocationPlacemark = nil;
-static CLLocationManager *_locationManager = nil;
-static FJTPunchManager *_locationManagerDelegate = nil; // :{
+
+NSString * const kFJTPunchManagerNotificationPunchInAction = @"Punch In";
+NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
 
 @interface FJTPunch ()
 
@@ -35,6 +37,7 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
         self.punchDate = [decoder decodeObjectForKey:@"punchDate"];
         self.punchType = [decoder decodeIntegerForKey:@"punchType"];
         self.archived = [decoder decodeBoolForKey:@"archived"];
+        self.punchNotes = [decoder decodeObjectForKey:@"punchNotes"];
     }
     
     return self;
@@ -45,17 +48,11 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
     [encoder encodeObject:self.punchDate forKey:@"punchDate"];
     [encoder encodeInteger:self.punchType forKey:@"punchType"];
     [encoder encodeBool:self.archived forKey:@"archived"];
+    [encoder encodeObject:self.punchNotes forKey:@"punchNotes"];
 }
 
 @end
 
-
-@interface FJTPunchManager () <CLLocationManagerDelegate>
-
-+ (CLLocationManager *)locationManager;
-+ (FJTPunchManager *)locationManagerDelegate;
-
-@end
 
 @implementation FJTPunchManager
 
@@ -73,61 +70,51 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
 
 + (FJTPunch *)punchIn
 {
-    // make a new icepack
     FJTPunch *rtnPunch = [[FJTPunch alloc] init];
     
     [rtnPunch setPunchDate:[NSDate date]];
     [rtnPunch setPunchType:FJTPunchTypePunchIn];
     
-    // add it to the array
     [[[self class] punches] addObject:rtnPunch];
     
 #ifdef LOGGING_ENABLED
-    // make sure we made a copy, and it is in the array
     if ( rtnPunch &&
-        [[[self class] punches] indexOfObject:rtnPunch] != NSNotFound )
+        [[[self class] punches] indexOfObject:rtnPunch] != NSNotFound ) {
         NSLog(@"✅ added punch in: %@", rtnPunch);
-    else
+    } else {
         NSLog(@"⚠️ error adding punch in: %@", rtnPunch);
+    }
 #endif
     
-    // save!
     [self saveData];
     
-    // schedule some notifications (if necessary)
     [[self class] scheduleNotificationsForPunch:rtnPunch];
     
-    // and return it
     return rtnPunch;
 }
 
 + (FJTPunch *)punchOut
 {
-    // make a new icepack
     FJTPunch *rtnPunch = [[FJTPunch alloc] init];
     
     [rtnPunch setPunchDate:[NSDate date]];
     [rtnPunch setPunchType:FJTPunchTypePunchOut];
     
-    // add it to the array
     [[[self class] punches] addObject:rtnPunch];
     
 #ifdef LOGGING_ENABLED
-    // make sure we made a copy, and it is in the array
     if ( rtnPunch &&
-        [[[self class] punches] indexOfObject:rtnPunch] != NSNotFound )
+        [[[self class] punches] indexOfObject:rtnPunch] != NSNotFound ) {
         NSLog(@"✅ added punch out: %@", rtnPunch);
-    else
+    } else {
         NSLog(@"⚠️ error adding punch out: %@", rtnPunch);
+    }
 #endif
     
-    // save!
     [[self class] saveData];
     
-    // cancel any scheduled notifications
     [[self class] cancelAllNotifications];
     
-    // and return it
     return rtnPunch;
 }
 
@@ -209,8 +196,7 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
     
     [self saveData];
     
-    // TODO: update region monitoring status (enable/update/disable)
-    [self updateRegionMonitoringForPlacemark];
+    [self updateRegionMonitoring];
 }
 
 
@@ -222,7 +208,7 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
 + (void)setPunchInReminderEnabled:(BOOL)enabled
 {
     [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"punchInReminder"];
-    [self updateRegionMonitoringForPlacemark];
+    [self updateRegionMonitoring];
 }
 
 
@@ -234,91 +220,15 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
 + (void)setPunchOutReminderEnabled:(BOOL)enabled
 {
     [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"punchOutReminder"];
-    [self updateRegionMonitoringForPlacemark];
+    [self updateRegionMonitoring];
 }
 
 
 #pragma mark - Utilities
-
-+ (CLLocationManager *)locationManager
-{
-    if ( !_locationManager ) {
-        _locationManager = [[CLLocationManager alloc] init];
-        _locationManager.delegate = [self locationManagerDelegate];
-    }
-    
-    return _locationManager;
-}
-
-+ (FJTPunchManager *)locationManagerDelegate
-{
-    if ( !_locationManagerDelegate ) {
-        _locationManagerDelegate = [[FJTPunchManager alloc] init];
-    }
-    
-    return _locationManagerDelegate;
-}
-
-- (void)locationManager:(CLLocationManager *)manager didEnterRegion:(CLRegion *)region
-{
-    NSLog(@"didExitRegion: %@", region);
-    
-    if ( [[self class] punchInReminderEnabled] ) {
-        switch ( [[UIApplication sharedApplication] applicationState] ) {
-            case UIApplicationStateActive:
-                // show an alert
-            {
-                UIAlertView *tmpAlert = [[UIAlertView alloc] initWithTitle:@"taco" message:@"You arrived at work" delegate:nil cancelButtonTitle:@"Punch In" otherButtonTitles:nil];
-                [tmpAlert show];
-            }
-                break;
-            case UIApplicationStateBackground:
-            case UIApplicationStateInactive:
-                // local notificaiton
-            {
-                UILocalNotification *tmpLocalNotification = [[UILocalNotification alloc] init];
-                tmpLocalNotification.alertBody = @"You arrived at work";
-                tmpLocalNotification.alertAction = @"Punch In";
-                tmpLocalNotification.soundName = UILocalNotificationDefaultSoundName;
-                [[UIApplication sharedApplication] presentLocalNotificationNow:tmpLocalNotification];
-            }
-                break;
-        } // switch
-    } // punchInReminderEnabled
-}
-
-- (void)locationManager:(CLLocationManager *)manager didExitRegion:(CLRegion *)region
-{
-    NSLog(@"didExitRegion: %@", region);
-
-    if ( [[self class] punchOutReminderEnabled] ) {
-        switch ( [[UIApplication sharedApplication] applicationState] ) {
-            case UIApplicationStateActive:
-                // show an alert
-            {
-                UIAlertView *tmpAlert = [[UIAlertView alloc] initWithTitle:@"taco" message:@"You left work" delegate:nil cancelButtonTitle:@"Punch Out" otherButtonTitles:nil];
-                [tmpAlert show];
-            }
-                break;
-            case UIApplicationStateBackground:
-            case UIApplicationStateInactive:
-                // local notificaiton
-            {
-                UILocalNotification *tmpLocalNotification = [[UILocalNotification alloc] init];
-                tmpLocalNotification.alertBody = @"You left work";
-                tmpLocalNotification.alertAction = @"Punch Out";
-                tmpLocalNotification.soundName = UILocalNotificationDefaultSoundName;
-                [[UIApplication sharedApplication] presentLocalNotificationNow:tmpLocalNotification];
-            }
-                break;
-        } // switch
-    } // punchOutReminderEnabled
-}
-
-+ (void)updateRegionMonitoringForPlacemark
++ (void)updateRegionMonitoring
 {
     // if we have a work location, and reminders that need it...
-    if ( _workLocationPlacemark && ( [[self class] punchInReminderEnabled] || [[self class] punchOutReminderEnabled] ) ) {
+    if ( [[self class] workLocationPlacemark] && ( [[self class] punchInReminderEnabled] || [[self class] punchOutReminderEnabled] ) ) {
         // can we get region-based location updates?
         if ( [CLLocationManager isMonitoringAvailableForClass:[CLCircularRegion class]] ) {
             // but is background refresh available to get them?
@@ -326,38 +236,34 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
                 // we can monitor for regions and will fire in the background
 
                 // clear out any existing monitoring
-                NSSet *tmpRegions = [[self locationManager] monitoredRegions];
+                NSSet *tmpRegions = [[FJTLocationManager defaultManager] monitoredRegions];
                 for ( CLRegion *tmpRegion in tmpRegions ) {
-                    [[self locationManager] stopMonitoringForRegion:tmpRegion];
+                    [[FJTLocationManager defaultManager] stopMonitoringForRegion:tmpRegion];
                 }
 
                 // and set up a region for the _workLocationPlacemark
                 CLCircularRegion *tmpRegion = [[CLCircularRegion alloc] initWithCenter:_workLocationPlacemark.location.coordinate radius:50.0 identifier:@"workLocation"];
-                [[self locationManager] startMonitoringForRegion:tmpRegion];
-                // NSLog(@"Started monitoring for region: %@", tmpRegion);
-                
-            } /* else {
-                NSLog(@"Background Refresh is not currently available.");
-            } */
+                [[FJTLocationManager defaultManager] startMonitoringForRegion:tmpRegion];
+                NSLog(@"✅ Started monitoring for region: %@", tmpRegion);
+            } else {
+                NSLog(@"⛔️ Background Refresh is not currently available.");
+            }
             
-        } /* else {
-            NSLog(@"Location Monitoring is not available for CLCirculatRegions");
-        } */
+        } else {
+            NSLog(@"⛔️ Location Monitoring is not available for CLCirculatRegions");
+        }
     } else {
         // no placemark, or no reminders. make sure we're not monitoring
-        NSSet *tmpRegions = [[self locationManager] monitoredRegions];
+        NSSet *tmpRegions = [[FJTLocationManager defaultManager] monitoredRegions];
         for ( CLRegion *tmpRegion in tmpRegions ) {
-            [[self locationManager] stopMonitoringForRegion:tmpRegion];
+            [[FJTLocationManager defaultManager] stopMonitoringForRegion:tmpRegion];
         }
-        if ( [[self locationManager] monitoredRegions].count == 0 ) {
+        if ( [[FJTLocationManager defaultManager] monitoredRegions].count == 0 ) {
             // get rid of the location manager and its delegate (what if its still running?)
-            _locationManager = nil;
-            _locationManagerDelegate = nil;
-
-            // NSLog(@"Stopped monitoring regions.");
-        } /* else {
-            NSLog(@"Attempted to stop monitoring regions, still monitoring: %@", [[self locationManager] monitoredRegions]);
-        } */
+            NSLog(@"✅ Stopped monitoring regions.");
+        } else {
+            NSLog(@"⛔️ Attempted to stop monitoring regions, still monitoring: %@", [[FJTLocationManager defaultManager] monitoredRegions]);
+        }
     }
 }
 
@@ -414,22 +320,26 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
     } else {
         NSError *tmpError = nil;
         tmpLocationSaveStatus = [[NSFileManager defaultManager] removeItemAtPath:tmpWorkLocationFilePath error:&tmpError];
-        if ( tmpError ) {
-            NSLog(@"eror deleting work location: %@", tmpError);
-        }
+        // if ( tmpError ) {
+        //     NSLog(@"eror deleting work location: %@", tmpError);
+        // }
     }
     
 #ifdef LOGGING_ENABLED
     if ( tmpPunchSaveStatus ) {
         NSLog(@"✅ saved punches to disk");
     } else {
-        NSLog(@"⚠️ error saving punches to disk");
+        if ( [[self class] punches] ) {
+            NSLog(@"⚠️ error saving punches to disk");
+        }
     }
 
     if ( tmpLocationSaveStatus ) {
         NSLog(@"✅ saved work location to disk");
     } else {
-        NSLog(@"⚠️ error saving work location to disk");
+        if ( [[self class] workLocationPlacemark] ) {
+            NSLog(@"⚠️ error saving work location to disk");
+        }
     }
 #endif
     
@@ -439,45 +349,46 @@ static FJTPunchManager *_locationManagerDelegate = nil; // :{
 {
     [[UIApplication sharedApplication] cancelAllLocalNotifications];
 #ifdef LOGGING_ENABLED
-    if ( [[UIApplication sharedApplication] scheduledLocalNotifications].count == 0 ) {
-        NSLog(@"✅ all local notifications cancelled");
-    } else {
-        NSLog(@"⚠️ local notifications not cancelled: %@", [[UIApplication sharedApplication] scheduledLocalNotifications]);
-    }
+    NSLog(@"✅ cancelled all notifications");
 #endif
 }
 
 + (void)scheduleNotificationsForPunch:(FJTPunch *)punch
 {
     if ( punch.punchType == FJTPunchTypePunchIn ) {
+        
+        // check for notification permissions
+        if ( ( [[NSUserDefaults standardUserDefaults] boolForKey:@"lunchReminder"]
+              || [[NSUserDefaults standardUserDefaults] boolForKey:@"shiftReminder"] )
+            && ![[UIApplication sharedApplication] currentUserNotificationSettings] ) {
+            if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]){
+                [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeAlert|UIUserNotificationTypeBadge|UIUserNotificationTypeSound) categories:nil]];
+#ifdef LOGGING_ENABLED
+                NSLog(@"✅ registered for local notifications");
+#endif
+            }
+        }
+        
         if ( [[NSUserDefaults standardUserDefaults] boolForKey:@"lunchReminder"] ) {
             UILocalNotification *tmpLunchNotification = [[UILocalNotification alloc] init];
             [tmpLunchNotification setAlertBody:@"It's been four hours since you punched in."];
-            [tmpLunchNotification setAlertAction:@"punch out"];
+            [tmpLunchNotification setAlertAction:kFJTPunchManagerNotificationPunchOutAction];
             NSDate *tmpFireDate = [NSDate dateWithTimeIntervalSinceNow:(4*60*60)];
             [tmpLunchNotification setFireDate:tmpFireDate];
             [[UIApplication sharedApplication] scheduleLocalNotification:tmpLunchNotification];
 #ifdef LOGGING_ENABLED
-            if ( [[[UIApplication sharedApplication] scheduledLocalNotifications] indexOfObject:tmpLunchNotification] != NSNotFound ) {
-                NSLog(@"✅ scheduled lunch reminder at: %@", tmpLunchNotification.fireDate);
-            } else {
-                NSLog(@"⚠️ error scheduling lunch reminder");
-            }
+            NSLog(@"✅ scheduled lunch reminder");
 #endif
         }
         if ( [[NSUserDefaults standardUserDefaults] boolForKey:@"shiftReminder"] ) {
             UILocalNotification *tmpShiftNotification = [[UILocalNotification alloc] init];
             [tmpShiftNotification setAlertBody:@"It's been eight hours since you punched in."];
-            [tmpShiftNotification setAlertAction:@"punch out"];
+            [tmpShiftNotification setAlertAction:kFJTPunchManagerNotificationPunchOutAction];
             NSDate *tmpFireDate = [NSDate dateWithTimeIntervalSinceNow:(8*60*60)];
             [tmpShiftNotification setFireDate:tmpFireDate];
             [[UIApplication sharedApplication] scheduleLocalNotification:tmpShiftNotification];
 #ifdef LOGGING_ENABLED
-            if ( [[[UIApplication sharedApplication] scheduledLocalNotifications] indexOfObject:tmpShiftNotification] != NSNotFound ) {
-                NSLog(@"✅ scheduled shift reminder at: %@", tmpShiftNotification.fireDate);
-            } else {
-                NSLog(@"⚠️ error scheduling shift reminder");
-            }
+            NSLog(@"✅ scheduled shift reminder");
 #endif
         }
     }

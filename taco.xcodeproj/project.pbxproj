@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3C01A98919F33CD80046BC35 /* FJTLocationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C01A98819F33CD80046BC35 /* FJTLocationManager.m */; };
+		3C31EDB4190DCFA800CF270B /* NSDate+Taco.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C31EDB3190DCFA800CF270B /* NSDate+Taco.m */; };
 		3C6C094318E4FDC800D35C80 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C6C094218E4FDC800D35C80 /* Foundation.framework */; };
 		3C6C094518E4FDC800D35C80 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C6C094418E4FDC800D35C80 /* CoreGraphics.framework */; };
 		3C6C094718E4FDC800D35C80 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C6C094618E4FDC800D35C80 /* UIKit.framework */; };
@@ -23,12 +25,14 @@
 		3C6C097118E4FDC800D35C80 /* tacoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C6C097018E4FDC800D35C80 /* tacoTests.m */; };
 		3C6C097C18E504A400D35C80 /* FJTFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C6C097B18E504A400D35C80 /* FJTFormatter.m */; };
 		3C6C097F18E50C9700D35C80 /* FJTPunchManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C6C097E18E50C9700D35C80 /* FJTPunchManager.m */; };
+		3C9242651913FD86005259B2 /* FJTPunchDetailsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C9242641913FD86005259B2 /* FJTPunchDetailsViewController.m */; };
 		3CC403D918E7735F00190C70 /* FJTSettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CC403D818E7735F00190C70 /* FJTSettingsViewController.m */; };
 		3CC403DA18E7CF9E00190C70 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3C6C095D18E4FDC800D35C80 /* Images.xcassets */; };
 		3CC403DC18E874BF00190C70 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3CC403DB18E874BF00190C70 /* CoreLocation.framework */; };
 		3CC403DF18E88C2D00190C70 /* FJTLocationViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CC403DE18E88C2D00190C70 /* FJTLocationViewController.m */; };
 		3CC403E118E8965000190C70 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3CC403E018E8965000190C70 /* MapKit.framework */; };
 		3CEC83B41904AEF900CF00A2 /* MMAlertView.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CEC83B31904AEF900CF00A2 /* MMAlertView.m */; };
+		3CFA664F19145C7A00F49A01 /* MMActionSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CFA664E19145C7A00F49A01 /* MMActionSheet.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +46,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3C01A98719F33CD80046BC35 /* FJTLocationManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJTLocationManager.h; sourceTree = "<group>"; };
+		3C01A98819F33CD80046BC35 /* FJTLocationManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJTLocationManager.m; sourceTree = "<group>"; };
+		3C31EDB2190DCFA800CF270B /* NSDate+Taco.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDate+Taco.h"; sourceTree = "<group>"; };
+		3C31EDB3190DCFA800CF270B /* NSDate+Taco.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDate+Taco.m"; sourceTree = "<group>"; };
 		3C6C093F18E4FDC800D35C80 /* taco.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = taco.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C6C094218E4FDC800D35C80 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		3C6C094418E4FDC800D35C80 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -67,6 +75,8 @@
 		3C6C097B18E504A400D35C80 /* FJTFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJTFormatter.m; sourceTree = "<group>"; };
 		3C6C097D18E50C9700D35C80 /* FJTPunchManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJTPunchManager.h; sourceTree = "<group>"; };
 		3C6C097E18E50C9700D35C80 /* FJTPunchManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJTPunchManager.m; sourceTree = "<group>"; };
+		3C9242631913FD86005259B2 /* FJTPunchDetailsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJTPunchDetailsViewController.h; sourceTree = "<group>"; };
+		3C9242641913FD86005259B2 /* FJTPunchDetailsViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJTPunchDetailsViewController.m; sourceTree = "<group>"; };
 		3CC403D718E7735F00190C70 /* FJTSettingsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJTSettingsViewController.h; sourceTree = "<group>"; };
 		3CC403D818E7735F00190C70 /* FJTSettingsViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJTSettingsViewController.m; sourceTree = "<group>"; };
 		3CC403DB18E874BF00190C70 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
@@ -75,6 +85,8 @@
 		3CC403E018E8965000190C70 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		3CEC83B21904AEF900CF00A2 /* MMAlertView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMAlertView.h; sourceTree = "<group>"; };
 		3CEC83B31904AEF900CF00A2 /* MMAlertView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMAlertView.m; sourceTree = "<group>"; };
+		3CFA664D19145C7A00F49A01 /* MMActionSheet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMActionSheet.h; sourceTree = "<group>"; };
+		3CFA664E19145C7A00F49A01 /* MMActionSheet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMActionSheet.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +158,8 @@
 				3C6C095818E4FDC800D35C80 /* FJTPunchViewController.m */,
 				3C6C095A18E4FDC800D35C80 /* FJTHistoryViewController.h */,
 				3C6C095B18E4FDC800D35C80 /* FJTHistoryViewController.m */,
+				3C9242631913FD86005259B2 /* FJTPunchDetailsViewController.h */,
+				3C9242641913FD86005259B2 /* FJTPunchDetailsViewController.m */,
 				3CC403D718E7735F00190C70 /* FJTSettingsViewController.h */,
 				3CC403D818E7735F00190C70 /* FJTSettingsViewController.m */,
 				3CC403DD18E88C2D00190C70 /* FJTLocationViewController.h */,
@@ -154,6 +168,10 @@
 				3C6C097E18E50C9700D35C80 /* FJTPunchManager.m */,
 				3C6C097A18E504A400D35C80 /* FJTFormatter.h */,
 				3C6C097B18E504A400D35C80 /* FJTFormatter.m */,
+				3C01A98719F33CD80046BC35 /* FJTLocationManager.h */,
+				3C01A98819F33CD80046BC35 /* FJTLocationManager.m */,
+				3C31EDB2190DCFA800CF270B /* NSDate+Taco.h */,
+				3C31EDB3190DCFA800CF270B /* NSDate+Taco.m */,
 				3C6C094918E4FDC800D35C80 /* Supporting Files */,
 			);
 			path = taco;
@@ -192,6 +210,7 @@
 		3CEC83B01904AEDE00CF00A2 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
+				3CFA664C19145C7A00F49A01 /* MMActionSheet */,
 				3CEC83B11904AEF900CF00A2 /* MMAlertView */,
 			);
 			name = Libraries;
@@ -205,6 +224,15 @@
 				3CEC83B31904AEF900CF00A2 /* MMAlertView.m */,
 			);
 			path = MMAlertView;
+			sourceTree = "<group>";
+		};
+		3CFA664C19145C7A00F49A01 /* MMActionSheet */ = {
+			isa = PBXGroup;
+			children = (
+				3CFA664D19145C7A00F49A01 /* MMActionSheet.h */,
+				3CFA664E19145C7A00F49A01 /* MMActionSheet.m */,
+			);
+			path = MMActionSheet;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -316,10 +344,14 @@
 				3C6C095918E4FDC800D35C80 /* FJTPunchViewController.m in Sources */,
 				3C6C094F18E4FDC800D35C80 /* main.m in Sources */,
 				3CC403DF18E88C2D00190C70 /* FJTLocationViewController.m in Sources */,
+				3CFA664F19145C7A00F49A01 /* MMActionSheet.m in Sources */,
 				3CC403D918E7735F00190C70 /* FJTSettingsViewController.m in Sources */,
+				3C9242651913FD86005259B2 /* FJTPunchDetailsViewController.m in Sources */,
+				3C01A98919F33CD80046BC35 /* FJTLocationManager.m in Sources */,
 				3C6C095318E4FDC800D35C80 /* FJTAppDelegate.m in Sources */,
 				3C6C097C18E504A400D35C80 /* FJTFormatter.m in Sources */,
 				3C6C095C18E4FDC800D35C80 /* FJTHistoryViewController.m in Sources */,
+				3C31EDB4190DCFA800CF270B /* NSDate+Taco.m in Sources */,
 				3CEC83B41904AEF900CF00A2 /* MMAlertView.m in Sources */,
 				3C6C097F18E50C9700D35C80 /* FJTPunchManager.m in Sources */,
 			);

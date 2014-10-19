@@ -81,15 +81,20 @@
             CLPlacemark *tmpWorkLocationPlacemark = [FJTPunchManager workLocationPlacemark];
             if ( tmpWorkLocationPlacemark ) {
                 // TOOD: format placemark into string
-                tmpDetailLabelText = tmpWorkLocationPlacemark.description;
+                tmpDetailLabelText = [NSString stringWithFormat:@"%@ %@", tmpWorkLocationPlacemark.subThoroughfare, tmpWorkLocationPlacemark.thoroughfare];
             }
             rtnCell.detailTextLabel.text = tmpDetailLabelText;
         } else {
             if ( [rtnCell.accessoryView respondsToSelector:@selector(setEnabled:)] ) {
-                BOOL tmpLocationEnabled = [FJTPunchManager workLocationPlacemark];
+                BOOL tmpLocationEnabled = NO;
+                if ( [FJTPunchManager workLocationPlacemark] ) {
+                    tmpLocationEnabled = YES;
+                }
+                BOOL tmpSwitchEnabled = (indexPath.row==1)?[FJTPunchManager punchInReminderEnabled]:[FJTPunchManager punchOutReminderEnabled];
                 [(UISwitch *)rtnCell.accessoryView setEnabled:tmpLocationEnabled];
-                rtnCell.textLabel.textColor = tmpLocationEnabled?[UIColor blackColor]:[UIColor colorWithWhite:0.8f alpha:1.0f];
-                rtnCell.detailTextLabel.textColor = tmpLocationEnabled?[UIColor blackColor]:[UIColor colorWithWhite:0.8f alpha:1.0f];
+                [(UISwitch *)rtnCell.accessoryView setOn:tmpSwitchEnabled];
+                rtnCell.textLabel.textColor = tmpLocationEnabled?[UIColor blackColor]:[UIColor lightGrayColor];
+                rtnCell.detailTextLabel.textColor = [UIColor lightGrayColor];
             }
         }
     }
@@ -115,11 +120,9 @@
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     if ( indexPath.section == 0 && indexPath.row == 0 ) {
-        FJTLocationViewController *tmpLocationViewController = [[FJTLocationViewController alloc] initWithPlacemark:[FJTPunchManager workLocationPlacemark]];
-        [tmpLocationViewController setDelegate:self];
-        [self.navigationController pushViewController:tmpLocationViewController animated:YES];
+        [self performSegueWithIdentifier:@"locationSegue" sender:self];
     } else if ( indexPath.section == 2 && indexPath.row == 0 ) {
-        UIActionSheet *tmpActionSheet = [[UIActionSheet alloc] initWithTitle:@"Are you sure you want\nto remove all punches? There is no going back."
+        UIActionSheet *tmpActionSheet = [[UIActionSheet alloc] initWithTitle:@"Are you sure you want\nto remove all punches?\n\nThere is no going back."
                                                                     delegate:self
                                                            cancelButtonTitle:@"Cancel"
                                                       destructiveButtonTitle:@"Delete All Punches"
@@ -127,6 +130,30 @@
         [tmpActionSheet showFromTabBar:self.tabBarController.tabBar];
     }
 }
+/*
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    CGFloat rtnHeight = 0.0f;
+    
+    if ( section == 2 ) {
+        rtnHeight = 180.0f;
+    }
+    
+    return rtnHeight;
+}
+
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    UIView *rtnView = nil;
+    
+    if ( section == 2 ) {
+        rtnView = [UIView new];
+        [rtnView setBackgroundColor:[UIColor clearColor]];
+    }
+    
+    return rtnView;
+}
+*/
 
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex
 {
@@ -151,8 +178,8 @@
 {
     [super viewDidLoad];
     
-    [self.tabBarItem setImage:[UIImage imageNamed:@"bell"]];
-    [self.tabBarItem setSelectedImage:[UIImage imageNamed:@"bell-on"]];
+    [self.tabBarItem setImage:[UIImage imageNamed:@"iconSettings"]];
+    [self.tabBarItem setSelectedImage:[UIImage imageNamed:@"iconSettingsOn"]];
 }
 
 @end

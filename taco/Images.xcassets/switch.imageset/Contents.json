@@ -2,12 +2,18 @@
   "images" : [
     {
       "idiom" : "universal",
-      "scale" : "1x"
+      "scale" : "1x",
+      "filename" : "clockOff.png"
     },
     {
       "idiom" : "universal",
       "scale" : "2x",
-      "filename" : "switch@2x.png"
+      "filename" : "clockOff@2x.png"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "3x",
+      "filename" : "ClockOff@3x.png"
     }
   ],
   "info" : {

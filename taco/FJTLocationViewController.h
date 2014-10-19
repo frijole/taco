@@ -8,6 +8,8 @@
 
 #import <UIKit/UIKit.h>
 
+#import <MapKit/MapKit.h>
+
 @class FJTLocationViewController;
 
 @protocol FJTLocationViewControllerDelegate <NSObject>
@@ -16,11 +18,26 @@
 
 @end
 
-@interface FJTLocationViewController : UIViewController
+@interface FJTLocationViewController : UIViewController <UITextFieldDelegate, UITableViewDataSource, UITableViewDelegate>
+
+@property (nonatomic, strong) IBOutlet MKMapView *mapView;
+@property (nonatomic, strong) IBOutlet UILongPressGestureRecognizer *dropPinRecognizer;
+@property (nonatomic, weak) IBOutlet UIBarButtonItem *statusBarButtonItem;
+@property (nonatomic, weak) IBOutlet UILabel *statusLabel;
+@property (nonatomic, weak) IBOutlet UIBarButtonItem *trashBarButtonItem;
+@property (nonatomic, weak) IBOutlet UIBarButtonItem *locationBarButtonItem;
+
+@property (nonatomic, weak) IBOutlet UIView *searchContainer;
+@property (nonatomic, weak) IBOutlet UITextField *searchField;
+@property (nonatomic, weak) IBOutlet UITableView *searchResults;
+@property (nonatomic, strong) IBOutlet UITapGestureRecognizer *dismissSearchTapRecognizer;
+- (IBAction)dismissSearchTapRecognizerFired:(id)sender;
 
 @property (nonatomic, strong) CLPlacemark *placemark;
 @property (nonatomic, weak) NSObject <FJTLocationViewControllerDelegate> *delegate;
 
-- (instancetype)initWithPlacemark:(CLPlacemark *)placemark;
+- (IBAction)trashButtonPressed:(id)sender;
+- (IBAction)locationButtonPressed:(id)sender;
+- (IBAction)longPressGestureRecognizerFired:(UILongPressGestureRecognizer *)gestureRecognizer;
 
 @end
