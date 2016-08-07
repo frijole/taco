@@ -79,7 +79,7 @@
         
         // get rid of seconds for the date picker date
         NSCalendar *calendar = [NSCalendar currentCalendar];
-        NSDateComponents *tmpComponents = [calendar components:(NSDayCalendarUnit | NSMonthCalendarUnit | NSYearCalendarUnit | NSHourCalendarUnit | NSMinuteCalendarUnit ) fromDate:self.punch.punchDate];
+        NSDateComponents *tmpComponents = [calendar components:(NSCalendarUnitDay | NSCalendarUnitMonth | NSCalendarUnitYear | NSCalendarUnitHour | NSCalendarUnitMinute ) fromDate:self.punch.punchDate];
         [self.datePicker setDate:[calendar dateFromComponents:tmpComponents]];
     }
 }

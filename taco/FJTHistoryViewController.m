@@ -207,8 +207,8 @@
             [self presentViewController:tmpActivityViewController animated:YES completion:nil];
 
         } else {
-            [MMAlertView showAlertViewWithTitle:@"No Selection"
-                                        message:@"You haven't selected\nanything to share"];
+            [UIAlertController showAlertWithTitle:@"No Selection"
+                                          message:@"You haven't selected\nanything to share"];
         }
     }
 }
@@ -236,8 +236,8 @@
     } else {
         NSString *tmpArchiveString = self.segmentedControl.selectedSegmentIndex==0?@"archive":@"unarchive";
         NSString *tmpArchiveMessage = [NSString stringWithFormat:@"You haven't selected\nanything to %@", tmpArchiveString];
-        [MMAlertView showAlertViewWithTitle:@"No Selection"
-                                    message:tmpArchiveMessage];
+        [UIAlertController showAlertWithTitle:@"No Selection"
+                                      message:tmpArchiveMessage];
     }
 }
 
@@ -477,7 +477,7 @@
     if ( editingStyle == UITableViewCellEditingStyleDelete ) {
         FJTPunch *tmpPunch = [self punchForIndexPath:indexPath];
         // if there is more than one punch in the section we are deleting from, we're just going to remove the row
-        BOOL tmpShouldKeepSection = [self tableView:nil numberOfRowsInSection:indexPath.section] > 1;
+        BOOL tmpShouldKeepSection = [self tableView:tableView numberOfRowsInSection:indexPath.section] > 1;
         if ( [FJTPunchManager deletePunch:tmpPunch] ) {
             [self loadPunches];
             if ( tmpShouldKeepSection ) {

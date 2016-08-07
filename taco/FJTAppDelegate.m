@@ -22,32 +22,30 @@
         NSString *tmpAlertBody = tmpNotification.alertBody;
         NSString *tmpAlertAction = tmpNotification.alertAction;
         
-        [MMAlertView showAlertViewWithTitle:nil
-                                    message:tmpAlertBody
-                          cancelButtonTitle:@"Close"
-                          acceptButtonTitle:tmpAlertAction
-                                cancelBlock:nil
-                                acceptBlock:^{
-                                    // do something
-                                    if ( [tmpAlertAction isEqualToString:kFJTPunchManagerNotificationPunchOutAction] ) {
-                                        [FJTPunchManager punchOut];
-                                    } else if ( [tmpAlertAction isEqualToString:kFJTPunchManagerNotificationPunchInAction] ) {
-                                        [FJTPunchManager punchIn];
-                                    }
-                                }];
+        UIAlertController *tmpAlert = [UIAlertController alertControllerWithTitle:nil
+                                                                          message:tmpAlertBody
+                                                                   preferredStyle:UIAlertControllerStyleAlert];
+        
+        [tmpAlert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+
+        [tmpAlert addAction:[UIAlertAction actionWithTitle:tmpAlertAction style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            // do something
+            if ( [tmpAlertAction isEqualToString:kFJTPunchManagerNotificationPunchOutAction] ) {
+                [FJTPunchManager punchOut];
+            } else if ( [tmpAlertAction isEqualToString:kFJTPunchManagerNotificationPunchInAction] ) {
+                [FJTPunchManager punchIn];
+            }
+        }]];
+        
+        [tmpAlert show];
     }
     
-    // [self configureAppearance];
-    
+#if LOCATION_ENABLED
     // Check for location notifications?
     [FJTPunchManager updateRegionMonitoring];
-        
+#endif
+    
     return YES;
-}
-
-- (void)configureAppearance
-{
-    [self.window setTintColor:[UIColor orangeColor]];
 }
 
 - (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings

@@ -33,6 +33,7 @@
 @property (nonatomic, strong) IBOutlet UITapGestureRecognizer *dismissSearchTapRecognizer;
 - (IBAction)dismissSearchTapRecognizerFired:(id)sender;
 
+@property (nonatomic, strong) CLLocation *location;
 @property (nonatomic, strong) CLPlacemark *placemark;
 @property (nonatomic, weak) NSObject <FJTLocationViewControllerDelegate> *delegate;
 

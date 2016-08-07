@@ -50,16 +50,20 @@ extern NSString * const kFJTPunchManagerNotificationPunchOutAction;
 + (BOOL)shiftReminderEnabled;
 + (void)setShiftReminderEnabled:(BOOL)enabled;
 
+#if LOCATION_ENABLED
 // location-based ones
++ (CLLocation *)workLocation;
 + (CLPlacemark *)workLocationPlacemark;
-+ (void)setWorkLocationPlacemark:(CLPlacemark *)placemark;
++ (void)setWorkLocation:(CLLocation *)location; // for location
++ (void)setWorkLocationPlacemark:(CLPlacemark *)placemark; // for metadata
+
++ (void)updateRegionMonitoring;
 
 + (BOOL)punchInReminderEnabled;
 + (void)setPunchInReminderEnabled:(BOOL)enabled;
 
 + (BOOL)punchOutReminderEnabled;
 + (void)setPunchOutReminderEnabled:(BOOL)enabled;
-
-+ (void)updateRegionMonitoring;
+#endif
 
 @end

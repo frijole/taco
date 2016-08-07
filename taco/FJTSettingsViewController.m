@@ -8,9 +8,19 @@
 
 #import "FJTSettingsViewController.h"
 
+#if LOCATION_ENABLED
 #import "FJTLocationViewController.h"
+#endif
 
-@interface FJTSettingsViewController () <FJTLocationViewControllerDelegate, UIActionSheetDelegate>
+typedef NS_ENUM( NSInteger, FJTSettingsTableViewSection ) {
+//    FJTSettingsTableViewSectionLocation = 0,
+    FJTSettingsTableViewSectionReminders = 0,
+    FJTSettingsTableViewSectionClearButton,
+    
+    FJTSettingsTableViewSectionCount
+};
+
+@interface FJTSettingsViewController () /* <FJTLocationViewControllerDelegate> */
 
 @end
 
@@ -47,23 +57,28 @@
 
 - (void)switchChanged:(UISwitch *)sender
 {
-    if ( sender == self.punchInReminderSwitch ) {
-        [FJTPunchManager setPunchInReminderEnabled:sender.isOn];
-    } else if ( sender == self.punchOutReminderSwitch ) {
-        [FJTPunchManager setPunchOutReminderEnabled:sender.isOn];
-    } else if ( sender == self.lunchReminderSwitch ) {
+    if ( sender == self.lunchReminderSwitch ) {
         [FJTPunchManager setLunchReminderEnabled:sender.isOn];
     } else if ( sender == self.shiftReminderSwitch ) {
         [FJTPunchManager setShiftReminderEnabled:sender.isOn];
     }
+#if LOCATION_ENABLED
+    else if ( sender == self.punchInReminderSwitch ) {
+        [FJTPunchManager setPunchInReminderEnabled:sender.isOn];
+    } else if ( sender == self.punchOutReminderSwitch ) {
+        [FJTPunchManager setPunchOutReminderEnabled:sender.isOn];
+    }
+#endif
 }
 
+#if LOCATION_ENABLED
 - (void)locationViewController:(FJTLocationViewController *)viewController didSetPlacemark:(CLPlacemark *)placemark
 {
     [FJTPunchManager setWorkLocationPlacemark:placemark];
     
     [self.navigationController popViewControllerAnimated:YES];
 }
+#endif
 
 - (void)didReceiveMemoryWarning
 {
@@ -71,11 +86,17 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
-{
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *rtnCell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
+
+    if ( indexPath.section == FJTSettingsTableViewSectionReminders ) {
+        BOOL tmpSwitchEnabled = (indexPath.row==1)?[FJTPunchManager lunchReminderEnabled]:[FJTPunchManager shiftReminderEnabled];
+        [(UISwitch *)rtnCell.accessoryView setOn:tmpSwitchEnabled];
+        rtnCell.detailTextLabel.textColor = [UIColor lightGrayColor];
+    }
     
-    if ( indexPath.section == 0 ) {
+    /*
+    if ( indexPath.section == FJTSettingsTableViewSectionLocation ) {
         if ( indexPath.row == 0 ) {
             NSString *tmpDetailLabelText = @"Tap to set location...";
             CLPlacemark *tmpWorkLocationPlacemark = [FJTPunchManager workLocationPlacemark];
@@ -98,10 +119,12 @@
             }
         }
     }
+     */
     
     return rtnCell;
 }
 
+/*
 - (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath
 {
     BOOL rtnStatus = NO;
@@ -114,22 +137,30 @@
     
     return rtnStatus;
 }
+*/
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return FJTSettingsTableViewSectionCount;
+}
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    if ( indexPath.section == 0 && indexPath.row == 0 ) {
-        [self performSegueWithIdentifier:@"locationSegue" sender:self];
-    } else if ( indexPath.section == 2 && indexPath.row == 0 ) {
-        UIActionSheet *tmpActionSheet = [[UIActionSheet alloc] initWithTitle:@"Are you sure you want\nto remove all punches?\n\nThere is no going back."
-                                                                    delegate:self
-                                                           cancelButtonTitle:@"Cancel"
-                                                      destructiveButtonTitle:@"Delete All Punches"
-                                                           otherButtonTitles:nil];
-        [tmpActionSheet showFromTabBar:self.tabBarController.tabBar];
+    if ( indexPath.section == FJTSettingsTableViewSectionClearButton ) {
+        UIAlertController *tmpConfirmationSheet = [UIAlertController alertControllerWithTitle:@"Are you sure you want\nto remove all punches?" message:@"There is no going back." preferredStyle:UIAlertControllerStyleActionSheet];
+        [tmpConfirmationSheet addAction:[UIAlertAction actionWithTitle:@"Delete All Punches" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            // do the needful
+            NSArray *tmpPunches = [[FJTPunchManager punches] copy];
+            for ( FJTPunch *tmpPunch in tmpPunches ) {
+                [FJTPunchManager deletePunch:tmpPunch];
+            }
+        }]];
+        [tmpConfirmationSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:tmpConfirmationSheet animated:YES completion:nil];
     }
 }
+
 /*
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
 {
@@ -154,32 +185,5 @@
     return rtnView;
 }
 */
-
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex
-{
-    if ( !buttonIndex == [actionSheet cancelButtonIndex] ) {
-        // do the needful
-        NSArray *tmpPunches = [[FJTPunchManager punches] copy];
-        for ( FJTPunch *tmpPunch in tmpPunches ) {
-            [FJTPunchManager deletePunch:tmpPunch];
-        }
-    } /* 
-    else {
-        NSLog(@"cancel button pressed");
-    } */
-}
-
-@end
-
-
-@implementation FJTSettingsRootViewController
-
-- (void)viewDidLoad
-{
-    [super viewDidLoad];
-    
-    [self.tabBarItem setImage:[UIImage imageNamed:@"iconSettings"]];
-    [self.tabBarItem setSelectedImage:[UIImage imageNamed:@"iconSettingsOn"]];
-}
 
 @end

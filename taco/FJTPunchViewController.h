@@ -23,8 +23,3 @@
 - (IBAction)longPressGestureRecognizerAction:(id)sender;
 
 @end
-
-
-@interface FJTPunchRootViewController : UINavigationController
-
-@end

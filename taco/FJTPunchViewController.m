@@ -102,6 +102,24 @@
     } else {
         // punch in
         [FJTPunchManager punchIn];
+        
+        // check for unset notifications
+        if ( ![[NSUserDefaults standardUserDefaults] objectForKey:@"lunchReminder"]
+            && ![[NSUserDefaults standardUserDefaults] objectForKey:@"shiftReminder"] ) {
+            
+            UIAlertController *tmpNotificationAlert = [UIAlertController alertControllerWithTitle:@"Enable Reminders?" message:@"Would you like to be remided to take a break when you have been at work for 4 hours, and to leave after 8?" preferredStyle:UIAlertControllerStyleAlert];
+            [tmpNotificationAlert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+                // set to NO
+                [FJTPunchManager setLunchReminderEnabled:NO];
+                [FJTPunchManager setShiftReminderEnabled:NO];
+            }]];
+            [tmpNotificationAlert addAction:[UIAlertAction actionWithTitle:@"Enable" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                // set to YES
+                [FJTPunchManager setLunchReminderEnabled:YES];
+                [FJTPunchManager setShiftReminderEnabled:YES];
+            }]];
+            [self presentViewController:tmpNotificationAlert animated:YES completion:nil];
+        }
     }
     
     [self updatePunchLabel];
@@ -124,50 +142,39 @@
 - (IBAction)longPressGestureRecognizerAction:(UILongPressGestureRecognizer *)sender
 {
     if ( sender.state == UIGestureRecognizerStateBegan ) {
-        MMActionSheet *tmpActionSheet = [[MMActionSheet alloc] initWithTitle:nil
-                                                           cancelButtonTitle:nil
-                                                                 cancelBlock:nil
-                                                      destructiveButtonTitle:nil
-                                                            destructiveBlock:nil];
-        [tmpActionSheet addButtonWithTitle:@"Punch In"
-                               buttonBlock:^{
-                                   // punch in
-                                   [FJTPunchManager punchIn];
-                                   [self updatePunchLabel];
-                               }];
+        UIAlertController *tmpAdvancedPunchSheet = [UIAlertController alertControllerWithTitle:nil
+                                                                                       message:nil
+                                                                                preferredStyle:UIAlertControllerStyleActionSheet];
         
-        [tmpActionSheet addButtonWithTitle:@"Punch Out"
-                               buttonBlock:^{
-                                   // punch in
-                                   [FJTPunchManager punchOut];
-                                   [self updatePunchLabel];
-                               }];
-
-        NSInteger tmpDestructiveButtonIndex =
-            [tmpActionSheet addButtonWithTitle:@"Delete Last Punch"
-                                   buttonBlock:^{
-                                       //
-                                   }];
-        [tmpActionSheet setDestructiveButtonIndex:tmpDestructiveButtonIndex];
+        [tmpAdvancedPunchSheet addAction:[UIAlertAction actionWithTitle:@"Punch In"
+                                                                 style:UIAlertActionStyleDefault
+                                                               handler:^(UIAlertAction * _Nonnull action) {
+                                                                   // punch in
+                                                                   [FJTPunchManager punchIn];
+                                                                   [self updatePunchLabel];
+                                                               }]];
         
-        [tmpActionSheet addCancelButtonWithTitle:@"Cancel"
-                               cancelButtonBlock:nil];
+        [tmpAdvancedPunchSheet addAction:[UIAlertAction actionWithTitle:@"Punch Out"
+                                                                 style:UIAlertActionStyleDefault
+                                                               handler:^(UIAlertAction * _Nonnull action) {
+                                                                   [FJTPunchManager punchOut];
+                                                                   [self updatePunchLabel];
+                                                               }]];
         
-        [tmpActionSheet showFromTabBar:self.tabBarController.tabBar];
+        [tmpAdvancedPunchSheet addAction:[UIAlertAction actionWithTitle:@"Delete Last Punch"
+                                                                 style:UIAlertActionStyleDestructive
+                                                               handler:^(UIAlertAction * _Nonnull action) {
+                                                                   FJTPunch *tmpPunch = [[FJTPunchManager punches] lastObject];
+                                                                   [FJTPunchManager deletePunch:tmpPunch];
+                                                                   [self updatePunchLabel];
+                                                               }]];
+        
+        [tmpAdvancedPunchSheet addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                                 style:UIAlertActionStyleCancel
+                                                                handler:nil]];
+        
+        [self presentViewController:tmpAdvancedPunchSheet animated:YES completion:nil];
     }
-}
-
-@end
-
-
-@implementation FJTPunchRootViewController
-
-- (void)viewDidLoad
-{
-    [super viewDidLoad];
-    
-    [self.tabBarItem setImage:[UIImage imageNamed:@"switch"]];
-    [self.tabBarItem setSelectedImage:[UIImage imageNamed:@"switch-on"]];
 }
 
 @end

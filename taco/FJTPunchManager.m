@@ -6,15 +6,17 @@
 //  Copyright (c) 2014 Ian Meyer. All rights reserved.
 //
 
-#define LOGGING_ENABLED YES
+#define LOGGING_ENABLED 1
 
 #define kFRTPunchManagerPunchFileName @"punches"
 #define kFRTPunchManagerLocationFileName @"workLocation"
+#define kFRTPunchManagerLocationPlacemarkFileName @"workLocationPlacemark"
 
 #import "FJTPunchManager.h"
 #import "FJTLocationManager.h"
 
 static NSMutableArray *_punches = nil;
+static CLLocation *_workLocation = nil;
 static CLPlacemark *_workLocationPlacemark = nil;
 
 NSString * const kFJTPunchManagerNotificationPunchInAction = @"Punch In";
@@ -77,7 +79,7 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
     
     [[[self class] punches] addObject:rtnPunch];
     
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
     if ( rtnPunch &&
         [[[self class] punches] indexOfObject:rtnPunch] != NSNotFound ) {
         NSLog(@"✅ added punch in: %@", rtnPunch);
@@ -102,7 +104,7 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
     
     [[[self class] punches] addObject:rtnPunch];
     
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
     if ( rtnPunch &&
         [[[self class] punches] indexOfObject:rtnPunch] != NSNotFound ) {
         NSLog(@"✅ added punch out: %@", rtnPunch);
@@ -137,7 +139,7 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
     
     BOOL rtnStatus = [[[self class] punches] indexOfObject:punch] == NSNotFound;
     
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
     if ( rtnStatus )
         NSLog(@"✅ deleted punch: %@", punch);
     else
@@ -165,6 +167,10 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
 + (void)setLunchReminderEnabled:(BOOL)enabled
 {
     [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"lunchReminder"];
+
+    if ( self.punches.lastObject ) {
+        [self scheduleNotificationsForPunch:self.punches.lastObject];
+    }
 }
 
 
@@ -176,10 +182,34 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
 + (void)setShiftReminderEnabled:(BOOL)enabled
 {
     [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"shiftReminder"];
+
+    if ( self.punches.lastObject ) {
+        [self scheduleNotificationsForPunch:self.punches.lastObject];
+    }
 }
 
 
 // location-based ones
+#if LOCATION_ENABLED
++ (CLLocation *)workLocation
+{
+    if ( !_workLocation ) {
+        // load it
+        [self loadData];
+    }
+    
+    return _workLocation;
+}
+
++ (void)setWorkLocation:(CLLocation *)location
+{
+    _workLocation = location;
+    
+    [self saveData];
+    
+    [self updateRegionMonitoring];
+}
+
 + (CLPlacemark *)workLocationPlacemark
 {
     if ( !_workLocationPlacemark ) {
@@ -196,9 +226,8 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
     
     [self saveData];
     
-    [self updateRegionMonitoring];
+    // [self updateRegionMonitoring];
 }
-
 
 + (BOOL)punchInReminderEnabled
 {
@@ -222,13 +251,15 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
     [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"punchOutReminder"];
     [self updateRegionMonitoring];
 }
+#endif
 
 
 #pragma mark - Utilities
+#if LOCATION_ENABLED
 + (void)updateRegionMonitoring
 {
     // if we have a work location, and reminders that need it...
-    if ( [[self class] workLocationPlacemark] && ( [[self class] punchInReminderEnabled] || [[self class] punchOutReminderEnabled] ) ) {
+    if ( [[self class] workLocation] && ( [[self class] punchInReminderEnabled] || [[self class] punchOutReminderEnabled] ) ) {
         // can we get region-based location updates?
         if ( [CLLocationManager isMonitoringAvailableForClass:[CLCircularRegion class]] ) {
             // but is background refresh available to get them?
@@ -242,7 +273,7 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
                 }
 
                 // and set up a region for the _workLocationPlacemark
-                CLCircularRegion *tmpRegion = [[CLCircularRegion alloc] initWithCenter:_workLocationPlacemark.location.coordinate radius:50.0 identifier:@"workLocation"];
+                CLCircularRegion *tmpRegion = [[CLCircularRegion alloc] initWithCenter:_workLocation.coordinate radius:50.0 identifier:@"workLocation"];
                 [[FJTLocationManager defaultManager] startMonitoringForRegion:tmpRegion];
                 NSLog(@"✅ Started monitoring for region: %@", tmpRegion);
             } else {
@@ -250,7 +281,7 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
             }
             
         } else {
-            NSLog(@"⛔️ Location Monitoring is not available for CLCirculatRegions");
+            NSLog(@"⛔️ Location Monitoring is not available for CLCircularRegion");
         }
     } else {
         // no placemark, or no reminders. make sure we're not monitoring
@@ -266,6 +297,7 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
         }
     }
 }
+#endif
 
 + (void)loadData
 {
@@ -273,27 +305,34 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
     NSArray *documentDirectories = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     
     NSString *tmpPunchesFilePath = [NSString stringWithFormat:@"%@/%@",[documentDirectories objectAtIndex:0],kFRTPunchManagerPunchFileName];
+#if LOCATION_ENABLED
     NSString *tmpWorkLocationFilePath = [NSString stringWithFormat:@"%@/%@",[documentDirectories objectAtIndex:0],kFRTPunchManagerLocationFileName];
-    
+    NSString *tmpWorkLocationPlacemarkFilePath = [NSString stringWithFormat:@"%@/%@",[documentDirectories objectAtIndex:0],kFRTPunchManagerLocationPlacemarkFileName];
+#endif
     NSArray *tmpPunchesFromDisk = [NSKeyedUnarchiver unarchiveObjectWithFile:tmpPunchesFilePath];
     if ( tmpPunchesFromDisk && tmpPunchesFromDisk.count > 0 ) {
         _punches = [NSMutableArray arrayWithArray:tmpPunchesFromDisk];
     }
     
-    _workLocationPlacemark = [NSKeyedUnarchiver unarchiveObjectWithFile:tmpWorkLocationFilePath];
+#if LOCATION_ENABLED
+    _workLocation = [NSKeyedUnarchiver unarchiveObjectWithFile:tmpWorkLocationFilePath];
+    _workLocationPlacemark = [NSKeyedUnarchiver unarchiveObjectWithFile:tmpWorkLocationPlacemarkFilePath];
+#endif
     
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
     if ( _punches ) {
         NSLog(@"✅ loaded punches from disk");
     } else {
         NSLog(@"⚠️ loading punches from disk failed");
     }
     
+#if LOCATION_ENABLED
     if ( _workLocationPlacemark ) {
         NSLog(@"✅ loaded work location from disk");
     } else {
         NSLog(@"⚠️ loading work location from disk failed");
     }
+#endif
 #endif
     
     // if we don't have _punches
@@ -311,21 +350,32 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
     NSArray *documentsDirectories = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     
     NSString *tmpPunchesFilePath = [NSString stringWithFormat:@"%@/%@",[documentsDirectories objectAtIndex:0],kFRTPunchManagerPunchFileName];
+#if LOCATION_ENABLED
     NSString *tmpWorkLocationFilePath = [NSString stringWithFormat:@"%@/%@",[documentsDirectories objectAtIndex:0],kFRTPunchManagerLocationFileName];
+    NSString *tmpWorkLocationPlacemarkFilePath = [NSString stringWithFormat:@"%@/%@",[documentsDirectories objectAtIndex:0],kFRTPunchManagerLocationPlacemarkFileName];
+#endif
     
     BOOL tmpPunchSaveStatus = [NSKeyedArchiver archiveRootObject:[[self class] punches] toFile:tmpPunchesFilePath];
+
+#if LOCATION_ENABLED
     BOOL tmpLocationSaveStatus = NO;
-    if ( _workLocationPlacemark ) {
-        tmpLocationSaveStatus = [NSKeyedArchiver archiveRootObject:[[self class] workLocationPlacemark] toFile:tmpWorkLocationFilePath];
+    if ( _workLocation ) {
+        tmpLocationSaveStatus = [NSKeyedArchiver archiveRootObject:[[self class] workLocation] toFile:tmpWorkLocationFilePath];
     } else {
         NSError *tmpError = nil;
         tmpLocationSaveStatus = [[NSFileManager defaultManager] removeItemAtPath:tmpWorkLocationFilePath error:&tmpError];
-        // if ( tmpError ) {
-        //     NSLog(@"eror deleting work location: %@", tmpError);
-        // }
     }
+
+    BOOL tmpLocationPlacemarkSaveStatus = NO;
+    if ( _workLocationPlacemark ) {
+        tmpLocationPlacemarkSaveStatus = [NSKeyedArchiver archiveRootObject:[[self class] workLocationPlacemark] toFile:tmpWorkLocationPlacemarkFilePath];
+    } else {
+        NSError *tmpError = nil;
+        tmpLocationPlacemarkSaveStatus = [[NSFileManager defaultManager] removeItemAtPath:tmpWorkLocationPlacemarkFilePath error:&tmpError];
+    }
+#endif
     
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
     if ( tmpPunchSaveStatus ) {
         NSLog(@"✅ saved punches to disk");
     } else {
@@ -334,13 +384,23 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
         }
     }
 
+#if LOCATION_ENABLED
     if ( tmpLocationSaveStatus ) {
         NSLog(@"✅ saved work location to disk");
     } else {
-        if ( [[self class] workLocationPlacemark] ) {
+        if ( [[self class] workLocation] ) {
             NSLog(@"⚠️ error saving work location to disk");
         }
     }
+
+    if ( tmpLocationPlacemarkSaveStatus ) {
+        NSLog(@"✅ saved work location metadata to disk");
+    } else {
+        if ( [[self class] workLocationPlacemark] ) {
+            NSLog(@"⚠️ error saving work metadata to disk");
+        }
+    }
+#endif
 #endif
     
 }
@@ -348,7 +408,7 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
 + (void)cancelAllNotifications
 {
     [[UIApplication sharedApplication] cancelAllLocalNotifications];
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
     NSLog(@"✅ cancelled all notifications");
 #endif
 }
@@ -358,36 +418,37 @@ NSString * const kFJTPunchManagerNotificationPunchOutAction = @"Punch Out";
     if ( punch.punchType == FJTPunchTypePunchIn ) {
         
         // check for notification permissions
-        if ( ( [[NSUserDefaults standardUserDefaults] boolForKey:@"lunchReminder"]
-              || [[NSUserDefaults standardUserDefaults] boolForKey:@"shiftReminder"] )
-            && ![[UIApplication sharedApplication] currentUserNotificationSettings] ) {
-            if ([UIApplication instancesRespondToSelector:@selector(registerUserNotificationSettings:)]){
+        if ( ( [self lunchReminderEnabled] || [self shiftReminderEnabled] )
+            && [[UIApplication sharedApplication] respondsToSelector:@selector(registerUserNotificationSettings:)] ) {
                 [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeAlert|UIUserNotificationTypeBadge|UIUserNotificationTypeSound) categories:nil]];
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
                 NSLog(@"✅ registered for local notifications");
 #endif
             }
-        }
         
-        if ( [[NSUserDefaults standardUserDefaults] boolForKey:@"lunchReminder"] ) {
+        // clear existing notifications
+        [[UIApplication sharedApplication] cancelAllLocalNotifications];
+        
+        // and make some new ones (as needed)
+        if ( [self lunchReminderEnabled] ) {
             UILocalNotification *tmpLunchNotification = [[UILocalNotification alloc] init];
             [tmpLunchNotification setAlertBody:@"It's been four hours since you punched in."];
             [tmpLunchNotification setAlertAction:kFJTPunchManagerNotificationPunchOutAction];
             NSDate *tmpFireDate = [NSDate dateWithTimeIntervalSinceNow:(4*60*60)];
             [tmpLunchNotification setFireDate:tmpFireDate];
             [[UIApplication sharedApplication] scheduleLocalNotification:tmpLunchNotification];
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
             NSLog(@"✅ scheduled lunch reminder");
 #endif
         }
-        if ( [[NSUserDefaults standardUserDefaults] boolForKey:@"shiftReminder"] ) {
+        if ( [self shiftReminderEnabled] ) {
             UILocalNotification *tmpShiftNotification = [[UILocalNotification alloc] init];
             [tmpShiftNotification setAlertBody:@"It's been eight hours since you punched in."];
             [tmpShiftNotification setAlertAction:kFJTPunchManagerNotificationPunchOutAction];
             NSDate *tmpFireDate = [NSDate dateWithTimeIntervalSinceNow:(8*60*60)];
             [tmpShiftNotification setFireDate:tmpFireDate];
             [[UIApplication sharedApplication] scheduleLocalNotification:tmpShiftNotification];
-#ifdef LOGGING_ENABLED
+#if LOGGING_ENABLED
             NSLog(@"✅ scheduled shift reminder");
 #endif
         }

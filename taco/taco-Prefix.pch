@@ -17,7 +17,5 @@
     #import "FJTPunchManager.h"
     #import "FJTFormatter.h"
     #import "NSDate+Taco.h"
-
-    #import "MMAlertView.h"
-    #import "MMActionSheet.h"
+    #import "UIAlertController+Taco.h"
 #endif

@@ -38,6 +38,7 @@
     
     [self setHidesBottomBarWhenPushed:YES];
     
+    [self setLocation:[FJTPunchManager workLocation]];
     [self setPlacemark:[FJTPunchManager workLocationPlacemark]];
     
     // [self.navigationController.toolbar setBarStyle:UIBarStyleBlack];
@@ -77,13 +78,13 @@
     [self.navigationController setToolbarHidden:NO animated:YES];
 
     // drop pin if we have a placemark
-    if ( self.placemark ) {
+    if ( self.location ) {
         MKMapCamera *tmpCamera = self.mapView.camera;
-        [tmpCamera setCenterCoordinate:self.placemark.location.coordinate];
+        [tmpCamera setCenterCoordinate:self.location.coordinate];
         [tmpCamera setAltitude:1000];
         [self.mapView setCamera:tmpCamera animated:YES];
         
-        [self dropPinAtCoordinate:self.placemark.location.coordinate];
+        [self dropPinAtCoordinate:self.location.coordinate];
     }
 }
 
@@ -98,10 +99,16 @@
 {
     NSString *tmpStatusLabelText = @"LOL WUT";
     
-    if ( self.placemark ) {
+    if ( self.location ) {
         self.trashBarButtonItem.enabled = YES;
         if ( self.pinPointAnnotation && self.placemark ) {
-            tmpStatusLabelText = [NSString stringWithFormat:@"%@ %@", self.placemark.subThoroughfare, self.placemark.thoroughfare]; // TODO: show address from placemark
+            tmpStatusLabelText = @"";
+            if ( self.placemark.subThoroughfare ) {
+                tmpStatusLabelText = [tmpStatusLabelText stringByAppendingFormat:@"%@ ", self.placemark.subThoroughfare];
+            }
+            if ( self.placemark.thoroughfare ) {
+                tmpStatusLabelText = [tmpStatusLabelText stringByAppendingFormat:@"%@ ", self.placemark.thoroughfare];
+            }
         } else {
             tmpStatusLabelText = @"Loading...";
         }
@@ -144,7 +151,8 @@
                               } else {
                                   CLPlacemark *tmpPlacemark = placemarks.firstObject;
                                   // MKPlacemark.h: To create an MKPlacemark from a CLPlacemark, call [MKPlacemark initWithPlacemark:] passing the CLPlacemark instance that is returned by CLGeocoder.
-                                  [self setPlacemark:[[MKPlacemark alloc] initWithPlacemark:tmpPlacemark]]; 
+                                  [self setPlacemark:[[MKPlacemark alloc] initWithPlacemark:tmpPlacemark]];
+                                  [FJTPunchManager setWorkLocation:[[CLLocation alloc] initWithLatitude:self.pinPointAnnotation.coordinate.latitude longitude:self.pinPointAnnotation.coordinate.longitude]];
                                   [FJTPunchManager setWorkLocationPlacemark:tmpPlacemark];
                                   [self updateStatusLabel];
                               }

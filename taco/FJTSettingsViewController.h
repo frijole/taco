@@ -19,7 +19,3 @@
 - (IBAction)switchChanged:(id)sender;
 
 @end
-
-@interface FJTSettingsRootViewController : UINavigationController
-
-@end
